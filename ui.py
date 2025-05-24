@@ -152,6 +152,7 @@ class UserInterface:
             "Enter the name of the recording you want to play: ",
             self.current_language
         )
+        
         filename = input(filename_prompt)
         success, error = self.speech_evaluator.audio_player.play_recording(filename, self.current_language)
         if not success:
