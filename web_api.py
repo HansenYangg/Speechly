@@ -7,6 +7,8 @@ from werkzeug.utils import secure_filename
 import base64
 import openai
 from dotenv import load_dotenv
+import time
+from datetime import datetime
 
 # Try to import local modules, but handle production gracefully
 try:
@@ -33,6 +35,65 @@ except ImportError as e:
         pass
 
 load_dotenv()
+
+session_recordings = []
+recording_counter = 0
+
+def generate_session_filename(topic):
+    """Generate a filename for session recordings"""
+    global recording_counter
+    recording_counter += 1
+    
+    # Clean topic for filename
+    import re
+    clean_topic = re.sub(r'[^\w\s-]', '', topic)[:20]
+    clean_topic = clean_topic.replace(' ', '_')
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{clean_topic}_{timestamp}_{recording_counter}.wav"
+
+def save_session_recording(filename, audio_data, topic, speech_type, transcription, feedback):
+    """Save recording data in memory for current session"""
+    global session_recordings
+    
+    recording_info = {
+        'filename': filename,
+        'audio_data': audio_data,  # Store the raw audio data
+        'topic': topic,
+        'speech_type': speech_type,
+        'transcription': transcription,
+        'feedback': feedback,
+        'size': len(audio_data),
+        'created': time.time(),
+        'modified': time.time()
+    }
+    
+    session_recordings.append(recording_info)
+    print(f"📁 Saved recording to session: {filename}")
+
+def get_session_recordings():
+    """Get list of recordings for current session"""
+    return [{
+        'filename': rec['filename'],
+        'size': rec['size'],
+        'created': rec['created'],
+        'modified': rec['modified']
+    } for rec in session_recordings]
+
+def get_session_recording_data(filename):
+    """Get specific recording data"""
+    for rec in session_recordings:
+        if rec['filename'] == filename:
+            return rec
+    return None
+
+def delete_session_recording(filename):
+    """Delete a recording from session"""
+    global session_recordings
+    initial_count = len(session_recordings)
+    session_recordings = [rec for rec in session_recordings if rec['filename'] != filename]
+    return len(session_recordings) < initial_count
+
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
@@ -121,12 +182,14 @@ def get_languages():
 def list_recordings():
     """List all available recordings"""
     if PRODUCTION_MODE:
-        # Production: No persistent recordings
+        # Production: Return session recordings
+        recordings = get_session_recordings()
         return jsonify({
             'success': True,
-            'recordings': []
+            'recordings': recordings
         })
     
+    # Development mode - your existing code
     try:
         recordings = speech_evaluator.audio_player.file_manager.list_recordings()
         recording_info = []
@@ -157,11 +220,26 @@ def list_recordings():
 def get_recording(filename):
     """Download a specific recording"""
     if PRODUCTION_MODE:
-        return jsonify({
-            'success': False,
-            'error': 'Recording downloads not available in production'
-        }), 404
+        # Production: Serve from session storage
+        recording = get_session_recording_data(filename)
+        if not recording:
+            return jsonify({
+                'success': False,
+                'error': 'Recording not found'
+            }), 404
+        
+        # Return the audio data as a file response
+        from flask import Response
+        response = Response(
+            recording['audio_data'],
+            mimetype='audio/wav',
+            headers={
+                'Content-Disposition': f'attachment; filename={filename}'
+            }
+        )
+        return response
     
+    # Development mode - your existing code
     try:
         Validator.validate_filename(filename)
         full_path = speech_evaluator.audio_player.file_manager.get_recording_path(filename)
@@ -180,15 +258,26 @@ def get_recording(filename):
             'error': str(e)
         }), 500
 
+
+
 @app.route('/api/recordings/<filename>', methods=['DELETE'])
 def delete_recording(filename):
     """Delete a specific recording"""
     if PRODUCTION_MODE:
-        return jsonify({
-            'success': False,
-            'error': 'Recording deletion not available in production'
-        }), 404
+        # Production: Delete from session storage
+        success = delete_session_recording(filename)
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Recording {filename} deleted successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Recording not found'
+            }), 404
     
+    # Development mode - your existing code
     try:
         Validator.validate_filename(filename)
         success = speech_evaluator.audio_player.file_manager.delete_recording(filename)
@@ -209,6 +298,7 @@ def delete_recording(filename):
             'success': False,
             'error': str(e)
         }), 500
+
 
 @app.route('/api/record', methods=['POST'])
 def process_recording():
@@ -268,7 +358,7 @@ def process_recording():
             temp_path = temp_file.name
         
         try:
-            # Replace the feedback generation section in your web_api.py /api/record route with this:
+           
 
             if PRODUCTION_MODE:
                 # Production: Use OpenAI directly with improved prompting
@@ -370,9 +460,21 @@ def process_recording():
                 
                 feedback = feedback_response.choices[0].message.content
                 
+                # Save recording to session storage
+                filename = generate_session_filename(topic)
+                save_session_recording(
+                    filename=filename,
+                    audio_data=audio_bytes,  # Save the original audio data
+                    topic=topic,
+                    speech_type=speech_type,
+                    transcription=transcription_text,
+                    feedback=feedback
+                )
+
                 return jsonify({
                     'success': True,
                     'result': {
+                        'filename': filename,  # Include filename in response
                         'transcription': transcription_text,
                         'feedback': feedback,
                         'topic': topic,
