@@ -66,11 +66,11 @@ languages = {
     # can easily add up to 1200 total languages but only listed the most common
 }
 
-OPENAI_API_KEY='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'
+OPENAI_API_KEY='placeholder'
 
 k = languages.keys()
 
-openai.api_key = "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"
+openai.api_key = "placeholder"
 
 
 def translate(text, target_language):
