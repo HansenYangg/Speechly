@@ -1,2 +1,6 @@
-sounddevice
-wavio
+sounddevice>=0.4.0
+wavio>=0.0.4
+numpy>=1.21.0
+SpeechRecognition>=3.8.0
+openai>=0.27.0
+requests>=2.25.0
