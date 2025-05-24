@@ -1824,7 +1824,7 @@ def serve_frontend():
             }
 
             if (hasFeedback) {
-                document.getElementById('feedbackContent').innerHTML = result.feedback.replace(/\\\\n/g, '<br>');
+                document.getElementById('feedbackContent').innerHTML = result.feedback.replace(/\\n/g, '<br>');
             } else {
                 document.getElementById('feedbackContent').innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px; color: #f9ca24;"></i><h3 style="color: #f9ca24; margin-bottom: 10px;">Recording Too Short</h3><p style="color: #2d3748;">Sorry! The recording was too short to generate feedback for. Please try again with a longer speech.</p></div>';
             }
