@@ -1,18 +1,24 @@
 import os
+from dotenv import load_dotenv
 
-# API Configuration
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', 'your-api-key-here')
+load_dotenv()
 
-# Audio Configuration
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY not found. Please create a .env file with your API key")
+
+# audio Configuration
 SAMPLE_RATE = 44100
 AUDIO_FORMAT = 'int16'
 AUDIO_CHANNELS = 1
 
-# Recording Configuration
+# recording Configuration
 MIN_RECORDING_DURATION = 5  # seconds
 SHORT_RECORDING_THRESHOLD = 20  # seconds
 
-# Supported Languages
+# supported Languages
 LANGUAGE_DISPLAY = [
     "en: English",
     "ko: Korean", 
@@ -51,5 +57,8 @@ LANGUAGES = {
     "zh": "Mandarin Chinese"
 }
 
-# Translation API Configuration
+
 TRANSLATION_API_URL = "https://api.mymemory.translated.net/get"
+
+RECORDINGS_DIR = "recordings"
+AUDIO_FILE_EXTENSION = ".wav"

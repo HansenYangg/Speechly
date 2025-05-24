@@ -9,7 +9,7 @@ class UserInterface:
         self.current_language = "en"
     
     def select_language(self):
-        """Language selection interface"""
+        """language selection interface"""
         while True:
             print("\nAvailable Languages:")
             for lang_option in LANGUAGE_DISPLAY:

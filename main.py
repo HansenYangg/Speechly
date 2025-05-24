@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 AI-powered Speech Evaluator
-Main application entry point
+main application entry point
 """
 
 from speech_evaluator import SpeechEvaluator

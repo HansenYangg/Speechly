@@ -9,7 +9,7 @@ class FeedbackService:
     
     def generate_feedback(self, topic, speech_type, transcription, recording_duration, 
                          language, is_repeat=False, previous_transcription=None):
-        """Generate AI feedback for a speech"""
+        """generate AI feedback for a speech"""
         
         if recording_duration <= MIN_RECORDING_DURATION:
             message = self.translation_service.translate(

@@ -4,7 +4,7 @@ from config import TRANSLATION_API_URL
 class TranslationService:
     @staticmethod
     def translate(text, target_language):
-        """Translate text to target language using MyMemory API"""
+        """translate text to target language using MyMemory API"""
         if target_language != "en":
             try:
                 url = f"{TRANSLATION_API_URL}?q={text}&langpair=en|{target_language}"

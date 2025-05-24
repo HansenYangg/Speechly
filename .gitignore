@@ -1,0 +1,4 @@
+
+echo ".env" >> .gitignore
+echo "*.log" >> .gitignore
+echo "__pycache__/" >> .gitignore
