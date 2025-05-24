@@ -818,6 +818,7 @@ def serve_frontend():
             cursor: pointer;
             transition: all 0.3s ease;
             appearance: none;
+            
         }
 
         .select-wrapper select:focus {
