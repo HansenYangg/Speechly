@@ -1,6 +1,7 @@
 import os
 import json
 import tempfile
+import uuid
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -10,7 +11,6 @@ from dotenv import load_dotenv
 import time
 from datetime import datetime
 
-# Try to import local modules, but handle production gracefully
 try:
     from speech_evaluator import SpeechEvaluator
     from config_validator import ConfigValidator
@@ -20,7 +20,6 @@ try:
     PRODUCTION_MODE = False
     print("🏠 Development mode: All modules loaded")
 except ImportError as e:
-    # Production mode - create mock classes
     PRODUCTION_MODE = True
     print(f"🌐 Production mode: {e}")
     
@@ -36,29 +35,40 @@ except ImportError as e:
 
 load_dotenv()
 
-session_recordings = []
-recording_counter = 0
+user_sessions = {}
+session_counters = {}
 
-def generate_session_filename(topic):
-    """Generate a filename for session recordings"""
-    global recording_counter
-    recording_counter += 1
+def get_session_id(request):
+    return request.headers.get('Session-ID')
+
+def ensure_session_exists(session_id):
+    if session_id and session_id not in user_sessions:
+        user_sessions[session_id] = []
+        session_counters[session_id] = 0
+        print(f"🆔 Created new session: {session_id}")
+
+def generate_session_filename(session_id, topic):
+    if not session_id:
+        return None
     
-    # Clean topic for filename
+    session_counters[session_id] = session_counters.get(session_id, 0) + 1
+    
     import re
     clean_topic = re.sub(r'[^\w\s-]', '', topic)[:20]
     clean_topic = clean_topic.replace(' ', '_')
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"{clean_topic}_{timestamp}_{recording_counter}.wav"
+    return f"{clean_topic}_{timestamp}_{session_counters[session_id]}.wav"
 
-def save_session_recording(filename, audio_data, topic, speech_type, transcription, feedback):
-    """Save recording data in memory for current session"""
-    global session_recordings
+def save_session_recording(session_id, filename, audio_data, topic, speech_type, transcription, feedback):
+    if not session_id:
+        return False
+    
+    ensure_session_exists(session_id)
     
     recording_info = {
         'filename': filename,
-        'audio_data': audio_data,  # Store the raw audio data
+        'audio_data': audio_data,
         'topic': topic,
         'speech_type': speech_type,
         'transcription': transcription,
@@ -68,43 +78,64 @@ def save_session_recording(filename, audio_data, topic, speech_type, transcripti
         'modified': time.time()
     }
     
-    session_recordings.append(recording_info)
-    print(f"📁 Saved recording to session: {filename}")
+    user_sessions[session_id].append(recording_info)
+    print(f"📁 Saved recording to session {session_id}: {filename}")
+    return True
 
-def get_session_recordings():
-    """Get list of recordings for current session"""
+def get_session_recordings(session_id):
+    if not session_id or session_id not in user_sessions:
+        return []
+    
     return [{
         'filename': rec['filename'],
         'size': rec['size'],
         'created': rec['created'],
         'modified': rec['modified']
-    } for rec in session_recordings]
+    } for rec in user_sessions[session_id]]
 
-def get_session_recording_data(filename):
-    """Get specific recording data"""
-    for rec in session_recordings:
+def get_session_recording_data(session_id, filename):
+    if not session_id or session_id not in user_sessions:
+        return None
+    
+    for rec in user_sessions[session_id]:
         if rec['filename'] == filename:
             return rec
     return None
 
-def delete_session_recording(filename):
-    """Delete a recording from session"""
-    global session_recordings
-    initial_count = len(session_recordings)
-    session_recordings = [rec for rec in session_recordings if rec['filename'] != filename]
-    return len(session_recordings) < initial_count
+def delete_session_recording(session_id, filename):
+    if not session_id or session_id not in user_sessions:
+        return False
+    
+    initial_count = len(user_sessions[session_id])
+    user_sessions[session_id] = [rec for rec in user_sessions[session_id] if rec['filename'] != filename]
+    return len(user_sessions[session_id]) < initial_count
 
+def clear_all_session_recordings(session_id):
+    if not session_id:
+        return False
+    
+    if session_id in user_sessions:
+        user_sessions[session_id] = []
+        session_counters[session_id] = 0
+        print(f"🗑️ Cleared all recordings for session: {session_id}")
+        return True
+    return False
+
+def cleanup_session(session_id):
+    if session_id in user_sessions:
+        del user_sessions[session_id]
+    if session_id in session_counters:
+        del session_counters[session_id]
+    print(f"🧹 Cleaned up session: {session_id}")
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend communication
+CORS(app)
 
 logger = setup_logger(__name__)
 
-# Initialize OpenAI client for production
 if PRODUCTION_MODE:
     client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-# Initialize speech evaluator or use production mode
 if not PRODUCTION_MODE:
     try:
         ConfigValidator.validate_all()
@@ -121,7 +152,6 @@ else:
 
 @app.errorhandler(Exception)
 def handle_error(error):
-    """Global error handler"""
     logger.error(f"API Error: {error}", exc_info=True)
     return jsonify({
         'success': False,
@@ -131,17 +161,40 @@ def handle_error(error):
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
     return jsonify({
         'success': True,
         'status': 'healthy',
         'version': '1.0.0',
-        'mode': 'production' if PRODUCTION_MODE else 'development'
+        'mode': 'production' if PRODUCTION_MODE else 'development',
+        'active_sessions': len(user_sessions)
+    })
+
+@app.route('/api/session/new', methods=['POST'])
+def create_new_session():
+    session_id = str(uuid.uuid4())
+    ensure_session_exists(session_id)
+    return jsonify({
+        'success': True,
+        'session_id': session_id
+    })
+
+@app.route('/api/session/cleanup', methods=['POST'])
+def cleanup_user_session():
+    session_id = get_session_id(request)
+    if not session_id:
+        return jsonify({
+            'success': False,
+            'error': 'No session ID provided'
+        }), 400
+    
+    cleanup_session(session_id)
+    return jsonify({
+        'success': True,
+        'message': 'Session cleaned up successfully'
     })
 
 @app.route('/api/validate-config', methods=['GET'])
 def validate_configuration():
-    """Validate system configuration"""
     if PRODUCTION_MODE:
         return jsonify({
             'success': True,
@@ -163,13 +216,10 @@ def validate_configuration():
 
 @app.route('/api/languages', methods=['GET'])
 def get_languages():
-    """Get available languages"""
     if PRODUCTION_MODE:
-        # Production: Use simple language list
         LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'tr', 'nl', 'bn']
         LANGUAGE_DISPLAY = [f"{code}: {code.upper()}" for code in LANGUAGES]
     else:
-        # Development: Use config file
         from config import LANGUAGES, LANGUAGE_DISPLAY
     
     return jsonify({
@@ -180,16 +230,15 @@ def get_languages():
 
 @app.route('/api/recordings', methods=['GET'])
 def list_recordings():
-    """List all available recordings"""
+    session_id = get_session_id(request)
+    
     if PRODUCTION_MODE:
-        # Production: Return session recordings
-        recordings = get_session_recordings()
+        recordings = get_session_recordings(session_id)
         return jsonify({
             'success': True,
             'recordings': recordings
         })
     
-    # Development mode - your existing code
     try:
         recordings = speech_evaluator.audio_player.file_manager.list_recordings()
         recording_info = []
@@ -218,17 +267,16 @@ def list_recordings():
 
 @app.route('/api/recordings/<filename>', methods=['GET'])
 def get_recording(filename):
-    """Download a specific recording"""
+    session_id = get_session_id(request)
+    
     if PRODUCTION_MODE:
-        # Production: Serve from session storage
-        recording = get_session_recording_data(filename)
+        recording = get_session_recording_data(session_id, filename)
         if not recording:
             return jsonify({
                 'success': False,
                 'error': 'Recording not found'
             }), 404
         
-        # Return the audio data as a file response
         from flask import Response
         response = Response(
             recording['audio_data'],
@@ -239,7 +287,6 @@ def get_recording(filename):
         )
         return response
     
-    # Development mode - your existing code
     try:
         Validator.validate_filename(filename)
         full_path = speech_evaluator.audio_player.file_manager.get_recording_path(filename)
@@ -258,14 +305,12 @@ def get_recording(filename):
             'error': str(e)
         }), 500
 
-
-
 @app.route('/api/recordings/<filename>', methods=['DELETE'])
 def delete_recording(filename):
-    """Delete a specific recording"""
+    session_id = get_session_id(request)
+    
     if PRODUCTION_MODE:
-        # Production: Delete from session storage
-        success = delete_session_recording(filename)
+        success = delete_session_recording(session_id, filename)
         if success:
             return jsonify({
                 'success': True,
@@ -277,7 +322,6 @@ def delete_recording(filename):
                 'error': 'Recording not found'
             }), 404
     
-    # Development mode - your existing code
     try:
         Validator.validate_filename(filename)
         success = speech_evaluator.audio_player.file_manager.delete_recording(filename)
@@ -299,12 +343,52 @@ def delete_recording(filename):
             'error': str(e)
         }), 500
 
+@app.route('/api/recordings', methods=['DELETE'])
+def clear_all_recordings():
+    session_id = get_session_id(request)
+    
+    try:
+        if PRODUCTION_MODE:
+            success = clear_all_session_recordings(session_id)
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': 'All session recordings cleared'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Session not found'
+                }), 404
+        else:
+            count = 0
+            recordings = speech_evaluator.audio_player.file_manager.list_recordings()
+            for filename in recordings:
+                if speech_evaluator.audio_player.file_manager.delete_recording(filename):
+                    count += 1
+            
+            return jsonify({
+                'success': True,
+                'message': f'Cleared {count} recordings'
+            })
+    except Exception as e:
+        logger.error(f"Error clearing recordings: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/record', methods=['POST'])
 def process_recording():
-    """Process uploaded audio recording and generate feedback"""
+    session_id = get_session_id(request)
+    
+    if not session_id:
+        return jsonify({
+            'success': False,
+            'error': 'No session ID provided'
+        }), 400
+    
     try:
-        # Get form data
         data = request.get_json()
         
         if not data:
@@ -313,11 +397,10 @@ def process_recording():
                 'error': 'No data provided'
             }), 400
         
-        # Validate required fields
         topic = data.get('topic', '').strip()
         speech_type = data.get('speech_type', '').strip()
         language = data.get('language', 'en')
-        audio_data = data.get('audio_data')  # Base64 encoded audio
+        audio_data = data.get('audio_data')
         is_repeat = data.get('is_repeat', False)
         previous_filename = data.get('previous_filename')
         
@@ -327,9 +410,7 @@ def process_recording():
                 'error': 'Missing required fields: topic, speech_type, or audio_data'
             }), 400
         
-        # Simple validation for production
         if PRODUCTION_MODE:
-            # Basic sanitization
             import re
             topic = re.sub(r'[^\w\s-]', '', topic)[:100]
             speech_type = re.sub(r'[^\w\s-]', '', speech_type)[:50]
@@ -338,12 +419,10 @@ def process_recording():
             if language not in valid_languages:
                 language = 'en'
         else:
-            # Development: Use validator
             topic = Validator.sanitize_topic(topic)
             speech_type = Validator.sanitize_speech_type(speech_type)
             Validator.validate_language(language)
         
-        # Decode audio data
         try:
             audio_bytes = base64.b64decode(audio_data)
         except Exception as e:
@@ -352,17 +431,13 @@ def process_recording():
                 'error': f'Invalid audio data: {e}'
             }), 400
         
-        # Save audio to temporary file
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
             temp_file.write(audio_bytes)
             temp_path = temp_file.name
         
         try:
-           
-
             if PRODUCTION_MODE:
-                # Production: Use OpenAI directly with improved prompting
-                print(f"🌐 Processing with OpenAI - Topic: {topic}, Language: {language}")
+                print(f"🌐 Processing with OpenAI - Session: {session_id}, Topic: {topic}, Language: {language}")
                 
                 with open(temp_path, 'rb') as audio_file:
                     transcription = client.audio.transcriptions.create(
@@ -379,23 +454,18 @@ def process_recording():
                         'error': 'Could not transcribe audio'
                     }), 400
                 
-                # Calculate approximate duration (rough estimate)
-                duration = len(audio_bytes) / (44100 * 2)  # Approximate for 16-bit 44.1kHz
+                duration = len(audio_bytes) / (44100 * 2)
                 
-                # Constants for duration thresholds
-                MIN_RECORDING_DURATION = 5  # 5 seconds
-                SHORT_RECORDING_THRESHOLD = 30  # 30 seconds
+                MIN_RECORDING_DURATION = 5
+                SHORT_RECORDING_THRESHOLD = 30
                 
-                # Check if recording is too short
                 if duration <= MIN_RECORDING_DURATION:
                     return jsonify({
                         'success': False,
                         'error': 'Speech was too short to generate feedback for (<5 seconds). Please try again.'
                     }), 400
                 
-                # Build sophisticated prompt based on duration and context
                 def build_feedback_prompt(topic, speech_type, transcription_text, duration, language, is_repeat, previous_transcription=None):
-                    # Base prompt components
                     grading_instruction = (
                         "First, give a grading on a strict scale of 1-100 on the speech. "
                         "Don't always have scores in increments of 5, use more varied/granular scores. "
@@ -416,7 +486,6 @@ def process_recording():
                     
                     language_instruction = f"Try to tailor to their specific speech style. Make sure to do this in {language}."
                     
-                    # Different prompts based on recording duration
                     if MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
                         prompt = (
                             f"The following speech is pretty short and may lack sufficient content. "
@@ -449,28 +518,32 @@ def process_recording():
                     
                     return prompt
                 
-                # Generate the sophisticated prompt
                 feedback_prompt = build_feedback_prompt(
                     topic, speech_type, transcription_text, duration, language, is_repeat
                 )
                 
-                # Generate feedback with improved model and settings
                 feedback_response = client.chat.completions.create(
-                    model="gpt-4o-mini",  # Use the same model as your original
+                    model="gpt-4o-mini",
                     messages=[
                         {"role": "user", "content": feedback_prompt}
                     ],
-                    max_tokens=500,  # Increased for more detailed feedback
+                    max_tokens=500,
                     temperature=0.7
                 )
                 
                 feedback = feedback_response.choices[0].message.content
                 
-                # Save recording to session storage
-                filename = generate_session_filename(topic)
+                filename = generate_session_filename(session_id, topic)
+                if not filename:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Failed to generate filename'
+                    }), 500
+                
                 save_session_recording(
+                    session_id=session_id,
                     filename=filename,
-                    audio_data=audio_bytes,  # Save the original audio data
+                    audio_data=audio_bytes,
                     topic=topic,
                     speech_type=speech_type,
                     transcription=transcription_text,
@@ -480,7 +553,7 @@ def process_recording():
                 return jsonify({
                     'success': True,
                     'result': {
-                        'filename': filename,  # Include filename in response
+                        'filename': filename,
                         'transcription': transcription_text,
                         'feedback': feedback,
                         'topic': topic,
@@ -491,7 +564,6 @@ def process_recording():
                 })
             
         finally:
-            # Clean up temp file if it still exists
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
     
@@ -504,7 +576,6 @@ def process_recording():
 
 @app.route('/api/transcribe', methods=['POST'])
 def transcribe_recording():
-    """Transcribe an existing recording"""
     if PRODUCTION_MODE:
         return jsonify({
             'success': False,
@@ -525,7 +596,6 @@ def transcribe_recording():
         Validator.validate_filename(filename)
         Validator.validate_language(language)
         
-        # Transcribe the audio
         transcription = speech_evaluator.transcription_service.transcribe_audio(
             filename, language, show_output=False
         )
@@ -550,7 +620,6 @@ def transcribe_recording():
 
 @app.route('/api/feedback', methods=['POST'])
 def generate_feedback():
-    """Generate feedback for a transcription"""
     try:
         data = request.get_json()
         
@@ -569,7 +638,6 @@ def generate_feedback():
             }), 400
         
         if PRODUCTION_MODE:
-            # Production: Use OpenAI
             feedback_response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{
@@ -580,7 +648,6 @@ def generate_feedback():
             )
             feedback = feedback_response.choices[0].message.content
         else:
-            # Development: Use speech_evaluator
             clean_topic = Validator.sanitize_topic(topic)
             clean_speech_type = Validator.sanitize_speech_type(speech_type)
             Validator.validate_language(language)
@@ -611,12 +678,14 @@ def generate_feedback():
 
 @app.route('/api/session', methods=['GET'])
 def get_session_data():
-    """Get current session data"""
+    session_id = get_session_id(request)
+    
     if PRODUCTION_MODE:
         return jsonify({
             'success': True,
             'session_data': {
-                'speech_count': 0,
+                'session_id': session_id,
+                'speech_count': len(get_session_recordings(session_id)),
                 'previous_speeches': [],
                 'speech_history': []
             }
@@ -642,9 +711,7 @@ def get_session_data():
 
 @app.route('/')
 def serve_frontend():
-    """Serve frontend in production"""
     if PRODUCTION_MODE:
-        # Serve the complete frontend HTML
         return """
 <!DOCTYPE html>
 <html lang="en">
@@ -753,6 +820,16 @@ def serve_frontend():
             margin: 0 auto;
         }
 
+        .session-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+        }
+
         .glass-card {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -818,7 +895,6 @@ def serve_frontend():
             cursor: pointer;
             transition: all 0.3s ease;
             appearance: none;
-            
         }
 
         .select-wrapper select:focus {
@@ -1256,6 +1332,10 @@ def serve_frontend():
             <p>Transform your speaking skills with cutting-edge AI-powered feedback and analysis</p>
         </div>
 
+        <div class="session-info" id="sessionInfo">
+            <i class="fas fa-user-circle"></i> Your Session: <span id="sessionId">Connecting...</span>
+        </div>
+
         <div class="glass-card">
             <div class="section-title">
                 <div class="section-icon">
@@ -1378,7 +1458,6 @@ def serve_frontend():
                     <span>Your Recordings</span>
                 </div>
                 <div class="recordings-grid" id="recordingsContainer">
-                    <!-- Recordings will be populated here -->
                 </div>
             </div>
 
@@ -1390,7 +1469,6 @@ def serve_frontend():
                     <span>AI Feedback & Analysis</span>
                 </div>
                 <div class="feedback-content" id="feedbackContent">
-                    <!-- Feedback will appear here -->
                 </div>
             </div>
 
@@ -1402,7 +1480,6 @@ def serve_frontend():
                     <span>Speech Transcription</span>
                 </div>
                 <div id="transcriptionContent">
-                    <!-- Transcription will appear here -->
                 </div>
             </div>
 
@@ -1421,25 +1498,104 @@ def serve_frontend():
     </div>
 
     <script>
-        // Global variables
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
         let currentLanguage = 'en';
         let recordedBlob = null;
         let recordings = [];
+        let sessionId = null;
 
-        // API base URL - IMPORTANT: This now points to the production server
         const API_BASE = 'https://speakeasyy.onrender.com/api';
 
-        // Initialize the app
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            initializeSession();
             setupKeyboardShortcuts();
             loadLanguages();
             checkHealth();
+            setupBeforeUnload();
         });
 
-        // Language change handler
+        async function initializeSession() {
+            try {
+                const response = await fetch(API_BASE + '/session/new', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    sessionId = result.session_id;
+                    document.getElementById('sessionId').textContent = sessionId.substring(0, 8) + '...';
+                    console.log('Session initialized:', sessionId);
+                } else {
+                    throw new Error('Failed to create session');
+                }
+            } catch (error) {
+                console.error('Failed to initialize session:', error);
+                sessionId = generateUUID();
+                document.getElementById('sessionId').textContent = sessionId.substring(0, 8) + '... (offline)';
+            }
+        }
+
+        function setupBeforeUnload() {
+            window.addEventListener('beforeunload', function(e) {
+                if (sessionId) {
+                    clearAllRecordings();
+                    cleanupSession();
+                }
+            });
+            
+            window.addEventListener('unload', function(e) {
+                if (sessionId) {
+                    clearAllRecordings();
+                    cleanupSession();
+                }
+            });
+        }
+
+        async function clearAllRecordings() {
+            if (!sessionId) return;
+            
+            try {
+                await fetch(API_BASE + '/recordings', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Session-ID': sessionId
+                    }
+                });
+            } catch (error) {
+                console.log('Failed to clear recordings on page unload');
+            }
+        }
+
+        async function cleanupSession() {
+            if (!sessionId) return;
+            
+            try {
+                await fetch(API_BASE + '/session/cleanup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Session-ID': sessionId
+                    }
+                });
+            } catch (error) {
+                console.log('Failed to cleanup session');
+            }
+        }
+
         document.getElementById('languageSelect').addEventListener('change', function() {
             currentLanguage = this.value;
             updateLanguage();
@@ -1449,14 +1605,19 @@ def serve_frontend():
             console.log('Language changed to: ' + currentLanguage);
         }
 
-        // API helper function
         async function apiCall(endpoint, options = {}) {
             try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                };
+                
+                if (sessionId) {
+                    headers['Session-ID'] = sessionId;
+                }
+                
                 const response = await fetch(API_BASE + endpoint, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...options.headers
-                    },
+                    headers: headers,
                     ...options
                 });
                 
@@ -1474,19 +1635,17 @@ def serve_frontend():
             }
         }
 
-        // Check backend health
         async function checkHealth() {
             try {
                 const result = await apiCall('/health');
                 if (result.success) {
-                    showStatus('✓ Connected to backend successfully', 'success');
+                    showStatus('✓ Connected to backend successfully (' + result.active_sessions + ' active sessions)', 'success');
                 }
             } catch (error) {
                 showStatus('❌ Cannot connect to backend. Please start the API server.', 'error');
             }
         }
 
-        // Load available languages from backend
         async function loadLanguages() {
             try {
                 const result = await apiCall('/languages');
@@ -1509,7 +1668,6 @@ def serve_frontend():
             }
         }
 
-        // Show status message
         function showStatus(message, type, duration) {
             if (typeof type === 'undefined') type = 'info';
             if (typeof duration === 'undefined') duration = 5000;
@@ -1524,7 +1682,6 @@ def serve_frontend():
             }
         }
 
-        // Keyboard shortcuts
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', function(e) {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
@@ -1550,7 +1707,7 @@ def serve_frontend():
                             stopRecording();
                         }
                         break;
-                    case 'x':  // Add this new case
+                    case 'x':
                         if (isRecording) {
                             e.preventDefault();
                             cancelActiveRecording();
@@ -1572,10 +1729,14 @@ def serve_frontend():
             });
         }
 
-        // Start recording process
         function startRecording() {
             if (isRecording) {
                 showStatus('Already recording!', 'error');
+                return;
+            }
+
+            if (!sessionId) {
+                showStatus('Session not initialized!', 'error');
                 return;
             }
 
@@ -1591,7 +1752,6 @@ def serve_frontend():
             document.getElementById('topicInput').focus();
         }
 
-        // Get supported MIME type
         function getSupportedMimeType() {
             const types = [
                 'audio/webm;codecs=opus',
@@ -1612,7 +1772,6 @@ def serve_frontend():
             return '';
         }
 
-        // Convert WebM to WAV for better backend compatibility
         async function convertToWAV(audioBlob) {
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -1633,16 +1792,13 @@ def serve_frontend():
                 return;
             }
 
-            // Set flag to prevent processing
             window.shouldProcessRecording = false;
             
             try {
-                // Stop the media recorder
                 if (mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
                 }
                 
-                // Stop all media tracks
                 if (mediaRecorder.stream) {
                     mediaRecorder.stream.getTracks().forEach(function(track) {
                         track.stop();
@@ -1652,12 +1808,10 @@ def serve_frontend():
                 console.log('Error stopping recorder:', error);
             }
             
-            // Clear recording data
             audioChunks = [];
             recordedBlob = null;
             isRecording = false;
 
-            // Reset UI to initial state
             document.getElementById('recordingStatus').classList.remove('active');
             document.getElementById('recordBtn').classList.remove('recording');
             document.getElementById('stopBtn').classList.add('hidden');
@@ -1668,8 +1822,6 @@ def serve_frontend():
             
             showStatus('🚫 Recording cancelled - no feedback generated', 'info');
         }
-
-
 
         function audioBufferToWav(buffer) {
             const length = buffer.length;
@@ -1720,6 +1872,11 @@ def serve_frontend():
                 return;
             }
 
+            if (!sessionId) {
+                showStatus('Session not initialized!', 'error');
+                return;
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
@@ -1748,13 +1905,11 @@ def serve_frontend():
                     const audioBlob = new Blob(audioChunks, { type: actualMimeType });
                     recordedBlob = audioBlob;
                     
-                    // Only process if this wasn't a cancellation
                     if (window.shouldProcessRecording !== false) {
                         console.log('Recording completed. MIME type:', actualMimeType, 'Size:', audioBlob.size);
                         processRecording();
                     }
                     
-                    // Reset the flag
                     window.shouldProcessRecording = true;
                 };
 
@@ -1785,7 +1940,6 @@ def serve_frontend():
                 return;
             }
 
-            // Set a flag to indicate this is a normal stop (not a cancel)
             window.shouldProcessRecording = true;
             
             mediaRecorder.stop();
@@ -1809,6 +1963,11 @@ def serve_frontend():
         async function processRecording() {
             if (!recordedBlob) {
                 showStatus('No recording to process', 'error');
+                return;
+            }
+
+            if (!sessionId) {
+                showStatus('Session not initialized!', 'error');
                 return;
             }
 
@@ -1858,6 +2017,7 @@ def serve_frontend():
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Session-ID': sessionId
                     },
                     body: JSON.stringify(payload)
                 });
@@ -1953,7 +2113,11 @@ def serve_frontend():
         async function playRecording(filename) {
             try {
                 showStatus('▶️ Loading ' + filename + '...', 'info');
-                const response = await fetch(API_BASE + '/recordings/' + filename);
+                const response = await fetch(API_BASE + '/recordings/' + filename, {
+                    headers: {
+                        'Session-ID': sessionId
+                    }
+                });
                 if (!response.ok) {
                     throw new Error('Failed to load recording: ' + response.status);
                 }
@@ -2007,18 +2171,22 @@ def serve_frontend():
     else:
         return "API is running. Frontend at http://localhost:3000"
 
-
-
-
-
 @app.route('/api/session', methods=['DELETE'])
 def clear_session():
-    """Clear current session data"""
+    session_id = get_session_id(request)
+    
     if PRODUCTION_MODE:
-        return jsonify({
-            'success': True,
-            'message': 'Session data cleared (production mode)'
-        })
+        success = clear_all_session_recordings(session_id)
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Session data cleared (production mode)'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Session not found'
+            }), 404
     
     try:
         speech_evaluator.data_manager.clear_session_data()
