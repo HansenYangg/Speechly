@@ -399,7 +399,8 @@ def process_recording():
                     grading_instruction = (
                         "First, give a grading on a strict scale of 1-100 on the speech. "
                         "Don't always have scores in increments of 5, use more varied/granular scores. "
-                        "You can choose to give separate scores for certain things, like 18/20 for structure, 17.5/20 for conclusion, etc., and please but clear spacing in between each (clearly separate them as if they were paragraphs).\n"
+                        "You can choose to give separate scores for certain things, like 18/20 for structure, 17.5/20 for conclusion, etc.\n "
+                        "Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n"
                     )
                     
                     feedback_instruction = (
@@ -428,17 +429,22 @@ def process_recording():
                             f"Please grade on a scale of 1-100 considering the potential lack of content and give constructive feedback without being overly nice. "
                             f"You can choose to give separate scores for certain things, like 18/20 for structure, 20/20 for conclusion, etc. "
                             f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
-                            f"please but clear spacing in between each (clearly separate them as if they were paragraphs)\n" 
+                            f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
                             f"{language_instruction}"
                         )
                     else:
                         prompt = (
-                            f"{grading_instruction} "
-                            f"{feedback_instruction} "
-                            f"{context} "
-                            f"{repeat_context} "
-                            f"In {language}, give specific feedback tailored towards this topic and type of speech and preferably cite specific things they said. Please put adequate spacing and indentation where needed.\n"
-                            f"The speech is:\n\n{transcription_text}\n\nFeedback:"
+                            f"Please evaluate and critique it given the following topic and type of the speech. "
+                            f"Give appropriate feedback accordingly based on these:\n\n"
+                            f"Speech topic: '{topic}'\n"
+                            f"Speech type: {speech_type}\n"
+                            f"Transcription: '{transcription_text}'\n\n"
+                            f"{repeat_context}\n"
+                            f"Please grade on a scale of 1-100 considering the potential lack of content and give constructive feedback without being overly nice. "
+                            f"You can choose to give separate scores for certain things, like 18/20 for structure, 20/20 for conclusion, etc. "
+                            f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
+                            f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
+                            f"{language_instruction}"
                         )
                     
                     return prompt
