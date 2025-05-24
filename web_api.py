@@ -1638,9 +1638,6 @@ def serve_frontend():
         async function checkHealth() {
             try {
                 const result = await apiCall('/health');
-                if (result.success) {
-                    showStatus('✓ Connected to backend successfully (' + result.active_sessions + ' active sessions)', 'success');
-                }
             } catch (error) {
                 showStatus('❌ Cannot connect to backend. Please start the API server.', 'error');
             }
