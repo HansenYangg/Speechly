@@ -1,4 +1,4 @@
-echo "flask
+flask
 flask-cors
 openai
-python-dotenv" > requirements.txt
+python-dotenv
