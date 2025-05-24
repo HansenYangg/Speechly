@@ -19,5 +19,7 @@ def main():
     ui.select_language()
     ui.main_menu()
 
+
+
 if __name__ == "__main__":
     main()
