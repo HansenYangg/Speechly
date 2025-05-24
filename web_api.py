@@ -5,26 +5,58 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import base64
+import openai
+from dotenv import load_dotenv
 
-from speech_evaluator import SpeechEvaluator
-from config_validator import ConfigValidator
-from exceptions import *
-from logger import setup_logger
-from validator import Validator
+# Try to import local modules, but handle production gracefully
+try:
+    from speech_evaluator import SpeechEvaluator
+    from config_validator import ConfigValidator
+    from exceptions import *
+    from logger import setup_logger
+    from validator import Validator
+    PRODUCTION_MODE = False
+    print("🏠 Development mode: All modules loaded")
+except ImportError as e:
+    # Production mode - create mock classes
+    PRODUCTION_MODE = True
+    print(f"🌐 Production mode: {e}")
+    
+    class MockLogger:
+        def info(self, msg): print(f"INFO: {msg}")
+        def error(self, msg, **kwargs): print(f"ERROR: {msg}")
+    
+    def setup_logger(name):
+        return MockLogger()
+    
+    class ValidationError(Exception):
+        pass
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
 
 logger = setup_logger(__name__)
 
-# initialize speech evaluator
-try:
-    ConfigValidator.validate_all()
-    speech_evaluator = SpeechEvaluator()
-    logger.info("Speech evaluator initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize speech evaluator: {e}")
+# Initialize OpenAI client for production
+if PRODUCTION_MODE:
+    client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+# Initialize speech evaluator or use production mode
+if not PRODUCTION_MODE:
+    try:
+        ConfigValidator.validate_all()
+        speech_evaluator = SpeechEvaluator()
+        logger.info("Speech evaluator initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize speech evaluator: {e}")
+        speech_evaluator = None
+        PRODUCTION_MODE = True
+        client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+else:
     speech_evaluator = None
+    print("🌐 Running in production mode with OpenAI API")
 
 @app.errorhandler(Exception)
 def handle_error(error):
@@ -39,29 +71,29 @@ def handle_error(error):
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    if speech_evaluator is None:
-        return jsonify({
-            'success': False,
-            'status': 'unhealthy',
-            'error': 'Speech evaluator not initialized'
-        }), 503
-    
     return jsonify({
         'success': True,
         'status': 'healthy',
-        'version': '1.0.0'
+        'version': '1.0.0',
+        'mode': 'production' if PRODUCTION_MODE else 'development'
     })
 
 @app.route('/api/validate-config', methods=['GET'])
 def validate_configuration():
     """Validate system configuration"""
+    if PRODUCTION_MODE:
+        return jsonify({
+            'success': True,
+            'validation_results': {'production_mode': True}
+        })
+    
     try:
         results = ConfigValidator.validate_all()
         return jsonify({
             'success': True,
             'validation_results': results
         })
-    except ConfigurationError as e:
+    except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e),
@@ -71,7 +103,14 @@ def validate_configuration():
 @app.route('/api/languages', methods=['GET'])
 def get_languages():
     """Get available languages"""
-    from config import LANGUAGES, LANGUAGE_DISPLAY
+    if PRODUCTION_MODE:
+        # Production: Use simple language list
+        LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'tr', 'nl', 'bn']
+        LANGUAGE_DISPLAY = [f"{code}: {code.upper()}" for code in LANGUAGES]
+    else:
+        # Development: Use config file
+        from config import LANGUAGES, LANGUAGE_DISPLAY
+    
     return jsonify({
         'success': True,
         'languages': LANGUAGES,
@@ -81,6 +120,13 @@ def get_languages():
 @app.route('/api/recordings', methods=['GET'])
 def list_recordings():
     """List all available recordings"""
+    if PRODUCTION_MODE:
+        # Production: No persistent recordings
+        return jsonify({
+            'success': True,
+            'recordings': []
+        })
+    
     try:
         recordings = speech_evaluator.audio_player.file_manager.list_recordings()
         recording_info = []
@@ -110,6 +156,12 @@ def list_recordings():
 @app.route('/api/recordings/<filename>', methods=['GET'])
 def get_recording(filename):
     """Download a specific recording"""
+    if PRODUCTION_MODE:
+        return jsonify({
+            'success': False,
+            'error': 'Recording downloads not available in production'
+        }), 404
+    
     try:
         Validator.validate_filename(filename)
         full_path = speech_evaluator.audio_player.file_manager.get_recording_path(filename)
@@ -131,6 +183,12 @@ def get_recording(filename):
 @app.route('/api/recordings/<filename>', methods=['DELETE'])
 def delete_recording(filename):
     """Delete a specific recording"""
+    if PRODUCTION_MODE:
+        return jsonify({
+            'success': False,
+            'error': 'Recording deletion not available in production'
+        }), 404
+    
     try:
         Validator.validate_filename(filename)
         success = speech_evaluator.audio_player.file_manager.delete_recording(filename)
@@ -179,10 +237,21 @@ def process_recording():
                 'error': 'Missing required fields: topic, speech_type, or audio_data'
             }), 400
         
-        # Validate inputs
-        clean_topic = Validator.sanitize_topic(topic)
-        clean_speech_type = Validator.sanitize_speech_type(speech_type)
-        Validator.validate_language(language)
+        # Simple validation for production
+        if PRODUCTION_MODE:
+            # Basic sanitization
+            import re
+            topic = re.sub(r'[^\w\s-]', '', topic)[:100]
+            speech_type = re.sub(r'[^\w\s-]', '', speech_type)[:50]
+            
+            valid_languages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'tr', 'nl', 'bn']
+            if language not in valid_languages:
+                language = 'en'
+        else:
+            # Development: Use validator
+            topic = Validator.sanitize_topic(topic)
+            speech_type = Validator.sanitize_speech_type(speech_type)
+            Validator.validate_language(language)
         
         # Decode audio data
         try:
@@ -193,76 +262,137 @@ def process_recording():
                 'error': f'Invalid audio data: {e}'
             }), 400
         
-        # Save audio to temporary file and then to recordings directory
+        # Save audio to temporary file
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
             temp_file.write(audio_bytes)
             temp_path = temp_file.name
         
         try:
-            # Generate filename
-            filename = speech_evaluator.audio_recorder.file_manager.generate_filename(
-                clean_topic, include_timestamp=True
-            )
-            
-            # Move to recordings directory
-            import shutil
-            shutil.move(temp_path, filename)
-            
-            # Calculate duration (approximate)
-            duration = len(audio_bytes) / (44100 * 2)  # Approximate for 16-bit 44.1kHz
-            
-            # Transcribe audio
-            transcription = speech_evaluator.transcription_service.transcribe_audio(
-                filename, language, show_output=False
-            )
-            
-            if not transcription:
-                return jsonify({
-                    'success': False,
-                    'error': 'Could not transcribe audio'
-                }), 400
-            
-            # Store transcription
-            filename_key = os.path.basename(filename)
-            speech_evaluator.data_manager.add_speech_data(
-                filename_key, transcription, topic=clean_topic, speech_type=clean_speech_type
-            )
-            
-            # Get previous transcription if repeat
-            previous_transcription = None
-            if is_repeat and previous_filename:
-                previous_transcription = speech_evaluator.data_manager.get_previous_transcription(
-                    previous_filename
+            if PRODUCTION_MODE:
+                # Production: Use OpenAI directly
+                print(f"🌐 Processing with OpenAI - Topic: {topic}, Language: {language}")
+                
+                with open(temp_path, 'rb') as audio_file:
+                    transcription = client.audio.transcriptions.create(
+                        model="whisper-1",
+                        file=audio_file,
+                        language=language if language != 'zh' else 'zh-CN'
+                    )
+                
+                transcription_text = transcription.text
+                
+                if not transcription_text or len(transcription_text.strip()) < 3:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Could not transcribe audio'
+                    }), 400
+                
+                # Generate feedback
+                feedback_prompt = f"""
+                Please provide constructive feedback on this speech:
+                
+                Topic: {topic}
+                Speech Type: {speech_type}
+                Language: {language}
+                Transcription: {transcription_text}
+                
+                Please provide feedback on:
+                1. Content and organization
+                2. Language use and clarity
+                3. Areas for improvement
+                4. Positive aspects
+                
+                Keep the feedback encouraging but specific.
+                """
+                
+                if is_repeat:
+                    feedback_prompt += "\n\nNote: This is a repeat attempt on the same topic."
+                
+                feedback_response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful speech coach providing constructive feedback."},
+                        {"role": "user", "content": feedback_prompt}
+                    ],
+                    max_tokens=300,
+                    temperature=0.7
                 )
-            
-            # Generate feedback
-            feedback = speech_evaluator.feedback_service.generate_feedback(
-                clean_topic, clean_speech_type, transcription, duration, 
-                language, is_repeat, previous_transcription
-            )
-            
-            return jsonify({
-                'success': True,
-                'result': {
-                    'filename': filename_key,
-                    'transcription': transcription,
-                    'feedback': feedback,
-                    'duration': duration,
-                    'topic': clean_topic,
-                    'speech_type': clean_speech_type
-                }
-            })
+                
+                feedback = feedback_response.choices[0].message.content
+                
+                return jsonify({
+                    'success': True,
+                    'result': {
+                        'transcription': transcription_text,
+                        'feedback': feedback,
+                        'topic': topic,
+                        'speech_type': speech_type
+                    }
+                })
+                
+            else:
+                # Development: Use speech_evaluator
+                print(f"🏠 Processing with speech_evaluator - Topic: {topic}")
+                
+                # Generate filename
+                filename = speech_evaluator.audio_recorder.file_manager.generate_filename(
+                    topic, include_timestamp=True
+                )
+                
+                # Move to recordings directory
+                import shutil
+                shutil.move(temp_path, filename)
+                
+                # Calculate duration (approximate)
+                duration = len(audio_bytes) / (44100 * 2)  # Approximate for 16-bit 44.1kHz
+                
+                # Transcribe audio
+                transcription_text = speech_evaluator.transcription_service.transcribe_audio(
+                    filename, language, show_output=False
+                )
+                
+                if not transcription_text:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Could not transcribe audio'
+                    }), 400
+                
+                # Store transcription
+                filename_key = os.path.basename(filename)
+                speech_evaluator.data_manager.add_speech_data(
+                    filename_key, transcription_text, topic=topic, speech_type=speech_type
+                )
+                
+                # Get previous transcription if repeat
+                previous_transcription = None
+                if is_repeat and previous_filename:
+                    previous_transcription = speech_evaluator.data_manager.get_previous_transcription(
+                        previous_filename
+                    )
+                
+                # Generate feedback
+                feedback = speech_evaluator.feedback_service.generate_feedback(
+                    topic, speech_type, transcription_text, duration, 
+                    language, is_repeat, previous_transcription
+                )
+                
+                return jsonify({
+                    'success': True,
+                    'result': {
+                        'filename': filename_key,
+                        'transcription': transcription_text,
+                        'feedback': feedback,
+                        'duration': duration,
+                        'topic': topic,
+                        'speech_type': speech_type
+                    }
+                })
             
         finally:
             # Clean up temp file if it still exists
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
     
-    except ValidationError as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
     except Exception as e:
         logger.error(f"Error processing recording: {e}")
         return jsonify({
@@ -273,6 +403,12 @@ def process_recording():
 @app.route('/api/transcribe', methods=['POST'])
 def transcribe_recording():
     """Transcribe an existing recording"""
+    if PRODUCTION_MODE:
+        return jsonify({
+            'success': False,
+            'error': 'Transcription of existing recordings not available in production'
+        }), 400
+    
     try:
         data = request.get_json()
         filename = data.get('filename')
@@ -330,17 +466,28 @@ def generate_feedback():
                 'error': 'Missing required fields: topic, speech_type, or transcription'
             }), 400
         
-        # Validate inputs
-        clean_topic = Validator.sanitize_topic(topic)
-        clean_speech_type = Validator.sanitize_speech_type(speech_type)
-        Validator.validate_language(language)
-        Validator.validate_duration(duration)
-        
-        # Generate feedback
-        feedback = speech_evaluator.feedback_service.generate_feedback(
-            clean_topic, clean_speech_type, transcription, duration,
-            language, is_repeat, previous_transcription
-        )
+        if PRODUCTION_MODE:
+            # Production: Use OpenAI
+            feedback_response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{
+                    "role": "user", 
+                    "content": f"Provide speech feedback for topic '{topic}' of type '{speech_type}'. Transcription: {transcription}"
+                }],
+                max_tokens=300
+            )
+            feedback = feedback_response.choices[0].message.content
+        else:
+            # Development: Use speech_evaluator
+            clean_topic = Validator.sanitize_topic(topic)
+            clean_speech_type = Validator.sanitize_speech_type(speech_type)
+            Validator.validate_language(language)
+            Validator.validate_duration(duration)
+            
+            feedback = speech_evaluator.feedback_service.generate_feedback(
+                clean_topic, clean_speech_type, transcription, duration,
+                language, is_repeat, previous_transcription
+            )
         
         if feedback:
             return jsonify({
@@ -363,6 +510,16 @@ def generate_feedback():
 @app.route('/api/session', methods=['GET'])
 def get_session_data():
     """Get current session data"""
+    if PRODUCTION_MODE:
+        return jsonify({
+            'success': True,
+            'session_data': {
+                'speech_count': 0,
+                'previous_speeches': [],
+                'speech_history': []
+            }
+        })
+    
     try:
         session_data = {
             'speech_count': speech_evaluator.data_manager.get_speech_count(),
@@ -380,17 +537,25 @@ def get_session_data():
             'success': False,
             'error': str(e)
         }), 500
-    
+
 @app.route('/')
 def serve_frontend():
     """Serve frontend in production"""
-    if os.environ.get("PORT"):
-
+    if PRODUCTION_MODE:
         try:
             with open('frontend.html', 'r') as f:
                 return f.read()
         except:
-            return "SpeakEasy API is running! Please deploy frontend."
+            return jsonify({
+                'message': 'SpeakEasy API is running!',
+                'endpoints': [
+                    '/api/health',
+                    '/api/languages', 
+                    '/api/recordings',
+                    '/api/record'
+                ],
+                'mode': 'production'
+            })
     else:
         # In development, redirect to frontend server
         return "API is running. Frontend at http://localhost:3000"
@@ -398,6 +563,12 @@ def serve_frontend():
 @app.route('/api/session', methods=['DELETE'])
 def clear_session():
     """Clear current session data"""
+    if PRODUCTION_MODE:
+        return jsonify({
+            'success': True,
+            'message': 'Session data cleared (production mode)'
+        })
+    
     try:
         speech_evaluator.data_manager.clear_session_data()
         return jsonify({
