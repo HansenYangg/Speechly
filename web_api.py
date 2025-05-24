@@ -583,14 +583,13 @@ def clear_session():
         }), 500
 
 if __name__ == '__main__':
-    # Production configuration
     port = int(os.environ.get("PORT", 5001))
-    debug = not os.environ.get("PORT")  # Debug only in local development
+    print(f"🚀 Binding to port {port}")
+    print(f"🌐 Host: 0.0.0.0")
     
-    print(f"🚀 Starting API server on port {port}")
-    if os.environ.get("PORT"):
-        print("🌐 Production mode")
-    else:
-        print("🏠 Development mode")
-    
-    app.run(debug=debug, host='0.0.0.0', port=port)
+    app.run(
+        host='0.0.0.0', 
+        port=port, 
+        debug=False,
+        threaded=True
+    )
