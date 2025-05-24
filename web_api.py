@@ -380,6 +380,20 @@ def get_session_data():
             'success': False,
             'error': str(e)
         }), 500
+    
+@app.route('/')
+def serve_frontend():
+    """Serve frontend in production"""
+    if os.environ.get("PORT"):
+
+        try:
+            with open('frontend.html', 'r') as f:
+                return f.read()
+        except:
+            return "SpeakEasy API is running! Please deploy frontend."
+    else:
+        # In development, redirect to frontend server
+        return "API is running. Frontend at http://localhost:3000"
 
 @app.route('/api/session', methods=['DELETE'])
 def clear_session():
@@ -398,12 +412,14 @@ def clear_session():
         }), 500
 
 if __name__ == '__main__':
-    if speech_evaluator is None:
-        print("❌ Failed to initialize speech evaluator. Please check configuration.")
-        exit(1)
+    # Production configuration
+    port = int(os.environ.get("PORT", 5001))
+    debug = not os.environ.get("PORT")  # Debug only in local development
     
-    print("🚀 Starting AI Speech Evaluator Web API...")
-    print("📱 Frontend will be available at: http://localhost:5000")
-    print("🔧 API endpoints available at: http://localhost:5000/api/*")
+    print(f"🚀 Starting API server on port {port}")
+    if os.environ.get("PORT"):
+        print("🌐 Production mode")
+    else:
+        print("🏠 Development mode")
     
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=debug, host='0.0.0.0', port=port)

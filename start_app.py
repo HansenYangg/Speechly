@@ -3,7 +3,6 @@
 Startup script for AI Speech Evaluator
 Starts both backend API and frontend servers
 """
-
 import subprocess
 import sys
 import threading
@@ -15,10 +14,17 @@ from logger import setup_logger
 logger = setup_logger(__name__)
 
 def start_backend():
-    """start the backend API server"""
+    """Start the backend API server"""
     try:
-        print("🚀 starting backend API server...")
-        result = subprocess.run([sys.executable, 'web_api.py'], check=True)
+        print("🚀 Starting backend API server...")
+        
+        # In production, use Popen instead of run to avoid blocking
+        if os.environ.get("PORT"):
+            process = subprocess.Popen([sys.executable, 'web_api.py'])
+            process.wait()
+        else:
+            result = subprocess.run([sys.executable, 'web_api.py'], check=True)
+            
     except subprocess.CalledProcessError as e:
         logger.error(f"Backend server failed: {e}")
         print(f"❌ Backend server failed to start: {e}")
@@ -30,6 +36,11 @@ def start_backend():
 
 def start_frontend():
     """Start the frontend HTML server"""
+    # Skip frontend in production (served by backend)
+    if os.environ.get("PORT"):
+        print("🌐 Production mode: Frontend served by backend")
+        return
+        
     try:
         print("🌐 Starting frontend server...")
         result = subprocess.run([sys.executable, 'html_server.py'], check=True)
@@ -44,7 +55,11 @@ def start_frontend():
 
 def open_browser():
     """Open browser after servers start"""
-    time.sleep(3)  # Give servers time to start
+    # Don't open browser in production
+    if os.environ.get("PORT"):
+        return
+        
+    time.sleep(3)
     try:
         webbrowser.open('http://localhost:3000')
         print("🌍 Opened web browser automatically")
@@ -70,10 +85,9 @@ def check_dependencies():
     if missing_files:
         print("❌ Missing required files:")
         for file in missing_files:
-            print(f"   - {file}")
+            print(f" - {file}")
         print("\nPlease ensure all files are in the same directory.")
         return False
-    
     return True
 
 def main():
@@ -91,23 +105,31 @@ def main():
     print()
     
     try:
-        # Start backend in a separate thread
-        backend_thread = threading.Thread(target=start_backend)
-        backend_thread.daemon = True
-        backend_thread.start()
-        
-        # Give backend time to start
-        time.sleep(2)
-        
-        # Start browser in background
-        browser_thread = threading.Thread(target=open_browser)
-        browser_thread.daemon = True
-        browser_thread.start()
-        
-        # Start frontend (this blocks)
-        print("🌐 Starting frontend server...")
-        start_frontend()
-        
+        if os.environ.get("PORT"):
+            # Production mode: just start backend
+            print("🌐 Production mode detected")
+            start_backend()
+        else:
+            # Local development mode
+            print("🏠 Local development mode")
+            
+            # Start backend in a separate thread
+            backend_thread = threading.Thread(target=start_backend)
+            backend_thread.daemon = True
+            backend_thread.start()
+            
+            # Give backend time to start
+            time.sleep(2)
+            
+            # Start browser in background
+            browser_thread = threading.Thread(target=open_browser)
+            browser_thread.daemon = True
+            browser_thread.start()
+            
+            # Start frontend (this blocks)
+            print("🌐 Starting frontend server...")
+            start_frontend()
+            
     except KeyboardInterrupt:
         print("\n" + "=" * 60)
         print("🛑 APPLICATION STOPPED")

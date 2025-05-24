@@ -2123,3 +2123,63 @@
 2025-05-23 22:05:20,106 - persistence - INFO - Speech record added to history
 2025-05-23 22:05:20,106 - persistence - INFO - Session data saved
 2025-05-23 22:05:20,106 - speech_manager - INFO - Added speech data for biden_20250523_220519.wav
+2025-05-23 23:41:39,193 - config_validator - INFO - Starting system validation...
+2025-05-23 23:41:39,195 - config_validator - INFO - File system validation successful
+2025-05-23 23:41:39,195 - config_validator - INFO - ✓ File System validation passed
+2025-05-23 23:41:39,425 - config_validator - INFO - Audio system validation successful
+2025-05-23 23:41:39,426 - config_validator - INFO - ✓ Audio System validation passed
+2025-05-23 23:41:39,426 - config_validator - INFO - Speech recognition validation successful
+2025-05-23 23:41:39,426 - config_validator - INFO - ✓ Speech Recognition validation passed
+2025-05-23 23:41:40,959 - config_validator - INFO - OpenAI API validation successful
+2025-05-23 23:41:40,959 - config_validator - INFO - ✓ OpenAI API validation passed
+2025-05-23 23:41:42,236 - config_validator - INFO - Translation API validation successful
+2025-05-23 23:41:42,239 - config_validator - INFO - ✓ Translation API validation passed
+2025-05-23 23:41:42,240 - config_validator - INFO - System validation completed
+2025-05-23 23:41:42,241 - persistence - INFO - Session data loaded
+2025-05-23 23:41:42,241 - speech_manager - INFO - Loaded 8 previous speeches from session
+2025-05-23 23:41:42,241 - __main__ - INFO - Speech evaluator initialized successfully
+2025-05-23 23:41:42,611 - config_validator - INFO - Starting system validation...
+2025-05-23 23:41:42,612 - config_validator - INFO - File system validation successful
+2025-05-23 23:41:42,612 - config_validator - INFO - ✓ File System validation passed
+2025-05-23 23:41:42,885 - config_validator - INFO - Audio system validation successful
+2025-05-23 23:41:42,885 - config_validator - INFO - ✓ Audio System validation passed
+2025-05-23 23:41:42,885 - config_validator - INFO - Speech recognition validation successful
+2025-05-23 23:41:42,885 - config_validator - INFO - ✓ Speech Recognition validation passed
+2025-05-23 23:41:43,721 - config_validator - INFO - OpenAI API validation successful
+2025-05-23 23:41:43,721 - config_validator - INFO - ✓ OpenAI API validation passed
+2025-05-23 23:41:44,676 - config_validator - INFO - Translation API validation successful
+2025-05-23 23:41:44,677 - config_validator - INFO - ✓ Translation API validation passed
+2025-05-23 23:41:44,678 - config_validator - INFO - System validation completed
+2025-05-23 23:41:44,679 - persistence - INFO - Session data loaded
+2025-05-23 23:41:44,679 - speech_manager - INFO - Loaded 8 previous speeches from session
+2025-05-23 23:41:44,679 - __main__ - INFO - Speech evaluator initialized successfully
+2025-05-23 23:41:55,273 - config_validator - INFO - Starting system validation...
+2025-05-23 23:41:55,273 - config_validator - INFO - File system validation successful
+2025-05-23 23:41:55,273 - config_validator - INFO - ✓ File System validation passed
+2025-05-23 23:41:55,541 - config_validator - INFO - Audio system validation successful
+2025-05-23 23:41:55,542 - config_validator - INFO - ✓ Audio System validation passed
+2025-05-23 23:41:55,542 - config_validator - INFO - Speech recognition validation successful
+2025-05-23 23:41:55,542 - config_validator - INFO - ✓ Speech Recognition validation passed
+2025-05-23 23:41:56,548 - config_validator - INFO - OpenAI API validation successful
+2025-05-23 23:41:56,548 - config_validator - INFO - ✓ OpenAI API validation passed
+2025-05-23 23:41:57,487 - config_validator - INFO - Translation API validation successful
+2025-05-23 23:41:57,489 - config_validator - INFO - ✓ Translation API validation passed
+2025-05-23 23:41:57,489 - config_validator - INFO - System validation completed
+2025-05-23 23:41:57,490 - persistence - INFO - Session data loaded
+2025-05-23 23:41:57,491 - speech_manager - INFO - Loaded 8 previous speeches from session
+2025-05-23 23:41:57,491 - __main__ - INFO - Speech evaluator initialized successfully
+2025-05-23 23:41:57,889 - config_validator - INFO - Starting system validation...
+2025-05-23 23:41:57,890 - config_validator - INFO - File system validation successful
+2025-05-23 23:41:57,890 - config_validator - INFO - ✓ File System validation passed
+2025-05-23 23:41:58,160 - config_validator - INFO - Audio system validation successful
+2025-05-23 23:41:58,160 - config_validator - INFO - ✓ Audio System validation passed
+2025-05-23 23:41:58,160 - config_validator - INFO - Speech recognition validation successful
+2025-05-23 23:41:58,160 - config_validator - INFO - ✓ Speech Recognition validation passed
+2025-05-23 23:41:58,784 - config_validator - INFO - OpenAI API validation successful
+2025-05-23 23:41:58,784 - config_validator - INFO - ✓ OpenAI API validation passed
+2025-05-23 23:41:59,741 - config_validator - INFO - Translation API validation successful
+2025-05-23 23:41:59,741 - config_validator - INFO - ✓ Translation API validation passed
+2025-05-23 23:41:59,742 - config_validator - INFO - System validation completed
+2025-05-23 23:41:59,742 - persistence - INFO - Session data loaded
+2025-05-23 23:41:59,742 - speech_manager - INFO - Loaded 8 previous speeches from session
+2025-05-23 23:41:59,742 - __main__ - INFO - Speech evaluator initialized successfully
