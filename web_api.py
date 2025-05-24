@@ -814,7 +814,7 @@ def serve_frontend():
             border: 2px solid rgba(255,255,255,0.2);
             border-radius: 16px;
             font-size: 16px;
-            color: white;
+            color: #4a5568;
             cursor: pointer;
             transition: all 0.3s ease;
             appearance: none;
