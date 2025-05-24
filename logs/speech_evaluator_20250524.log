@@ -103,3 +103,48 @@
 2025-05-24 00:15:01,608 - persistence - INFO - Session data loaded
 2025-05-24 00:15:01,608 - speech_manager - INFO - Loaded 8 previous speeches from session
 2025-05-24 00:15:01,608 - __main__ - INFO - Speech evaluator initialized successfully
+2025-05-24 00:20:53,962 - config_validator - INFO - Starting system validation...
+2025-05-24 00:20:53,962 - config_validator - INFO - File system validation successful
+2025-05-24 00:20:53,962 - config_validator - INFO - ✓ File System validation passed
+2025-05-24 00:20:54,181 - config_validator - INFO - Audio system validation successful
+2025-05-24 00:20:54,181 - config_validator - INFO - ✓ Audio System validation passed
+2025-05-24 00:20:54,181 - config_validator - INFO - Speech recognition validation successful
+2025-05-24 00:20:54,181 - config_validator - INFO - ✓ Speech Recognition validation passed
+2025-05-24 00:20:54,843 - config_validator - INFO - OpenAI API validation successful
+2025-05-24 00:20:54,844 - config_validator - INFO - ✓ OpenAI API validation passed
+2025-05-24 00:20:56,165 - config_validator - INFO - Translation API validation successful
+2025-05-24 00:20:56,168 - config_validator - INFO - ✓ Translation API validation passed
+2025-05-24 00:20:56,169 - config_validator - INFO - System validation completed
+2025-05-24 00:20:56,169 - persistence - INFO - Session data loaded
+2025-05-24 00:20:56,170 - speech_manager - INFO - Loaded 8 previous speeches from session
+2025-05-24 00:20:56,170 - __main__ - INFO - Speech evaluator initialized successfully
+2025-05-24 00:26:04,918 - config_validator - INFO - Starting system validation...
+2025-05-24 00:26:04,919 - config_validator - INFO - File system validation successful
+2025-05-24 00:26:04,919 - config_validator - INFO - ✓ File System validation passed
+2025-05-24 00:26:05,146 - config_validator - INFO - Audio system validation successful
+2025-05-24 00:26:05,146 - config_validator - INFO - ✓ Audio System validation passed
+2025-05-24 00:26:05,146 - config_validator - INFO - Speech recognition validation successful
+2025-05-24 00:26:05,146 - config_validator - INFO - ✓ Speech Recognition validation passed
+2025-05-24 00:26:06,036 - config_validator - INFO - OpenAI API validation successful
+2025-05-24 00:26:06,036 - config_validator - INFO - ✓ OpenAI API validation passed
+2025-05-24 00:26:07,357 - config_validator - INFO - Translation API validation successful
+2025-05-24 00:26:07,358 - config_validator - INFO - ✓ Translation API validation passed
+2025-05-24 00:26:07,358 - config_validator - INFO - System validation completed
+2025-05-24 00:26:07,360 - persistence - INFO - Session data loaded
+2025-05-24 00:26:07,360 - speech_manager - INFO - Loaded 8 previous speeches from session
+2025-05-24 00:26:07,360 - __main__ - INFO - Speech evaluator initialized successfully
+2025-05-24 00:38:53,916 - config_validator - INFO - Starting system validation...
+2025-05-24 00:38:53,917 - config_validator - INFO - File system validation successful
+2025-05-24 00:38:53,917 - config_validator - INFO - ✓ File System validation passed
+2025-05-24 00:38:54,144 - config_validator - INFO - Audio system validation successful
+2025-05-24 00:38:54,144 - config_validator - INFO - ✓ Audio System validation passed
+2025-05-24 00:38:54,144 - config_validator - INFO - Speech recognition validation successful
+2025-05-24 00:38:54,144 - config_validator - INFO - ✓ Speech Recognition validation passed
+2025-05-24 00:38:54,876 - config_validator - INFO - OpenAI API validation successful
+2025-05-24 00:38:54,876 - config_validator - INFO - ✓ OpenAI API validation passed
+2025-05-24 00:38:56,381 - config_validator - INFO - Translation API validation successful
+2025-05-24 00:38:56,382 - config_validator - INFO - ✓ Translation API validation passed
+2025-05-24 00:38:56,382 - config_validator - INFO - System validation completed
+2025-05-24 00:38:56,383 - persistence - INFO - Session data loaded
+2025-05-24 00:38:56,383 - speech_manager - INFO - Loaded 8 previous speeches from session
+2025-05-24 00:38:56,383 - __main__ - INFO - Speech evaluator initialized successfully

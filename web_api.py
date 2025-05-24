@@ -268,8 +268,10 @@ def process_recording():
             temp_path = temp_file.name
         
         try:
+            # Replace the feedback generation section in your web_api.py /api/record route with this:
+
             if PRODUCTION_MODE:
-                # Production: Use OpenAI directly
+                # Production: Use OpenAI directly with improved prompting
                 print(f"🌐 Processing with OpenAI - Topic: {topic}, Language: {language}")
                 
                 with open(temp_path, 'rb') as audio_file:
@@ -287,34 +289,81 @@ def process_recording():
                         'error': 'Could not transcribe audio'
                     }), 400
                 
-                # Generate feedback
-                feedback_prompt = f"""
-                Please provide constructive feedback on this speech:
+                # Calculate approximate duration (rough estimate)
+                duration = len(audio_bytes) / (44100 * 2)  # Approximate for 16-bit 44.1kHz
                 
-                Topic: {topic}
-                Speech Type: {speech_type}
-                Language: {language}
-                Transcription: {transcription_text}
+                # Constants for duration thresholds
+                MIN_RECORDING_DURATION = 5  # 5 seconds
+                SHORT_RECORDING_THRESHOLD = 30  # 30 seconds
                 
-                Please provide feedback on:
-                1. Content and organization
-                2. Language use and clarity
-                3. Areas for improvement
-                4. Positive aspects
+                # Check if recording is too short
+                if duration <= MIN_RECORDING_DURATION:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Speech was too short to generate feedback for (<5 seconds). Please try again.'
+                    }), 400
                 
-                Keep the feedback encouraging but specific.
-                """
+                # Build sophisticated prompt based on duration and context
+                def build_feedback_prompt(topic, speech_type, transcription_text, duration, language, is_repeat, previous_transcription=None):
+                    # Base prompt components
+                    grading_instruction = (
+                        "First, give a grading on a strict scale of 1-100 on the speech. "
+                        "Don't always have scores in increments of 5, use more varied/granular scores. "
+                        "You can choose to give separate scores for certain things, like 18/20 for structure, 17.5/20 for conclusion, etc."
+                    )
+                    
+                    feedback_instruction = (
+                        "Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc. "
+                        "Note good things they did and things they can improve on, and don't be overly nice. "
+                    )
+                    
+                    context = f"For context, the speech was '{topic}' for a {speech_type}."
+                    
+                    repeat_context = ""
+                    if is_repeat and previous_transcription:
+                        repeat_context = f"Also, the user has already done a speech on this topic. Here is the original transcription: {previous_transcription}. Compare the two and note improvements."
+                    
+                    language_instruction = f"Try to tailor to their specific speech style. Make sure to do this in {language}."
+                    
+                    # Different prompts based on recording duration
+                    if MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
+                        prompt = (
+                            f"The following speech is pretty short and may lack sufficient content. "
+                            f"Please evaluate and critique it given the following topic and type of the speech. "
+                            f"Give appropriate feedback accordingly based on these:\n\n"
+                            f"Speech topic: '{topic}'\n"
+                            f"Speech type: {speech_type}\n"
+                            f"Transcription: '{transcription_text}'\n\n"
+                            f"{repeat_context}\n"
+                            f"Please grade on a scale of 1-100 considering the potential lack of content and give constructive feedback without being overly nice. "
+                            f"You can choose to give separate scores for certain things, like 18/20 for structure, 20/20 for conclusion, etc. "
+                            f"Don't always have scores in increments of 5, use more varied/granular scores. "
+                            f"{language_instruction}"
+                        )
+                    else:
+                        prompt = (
+                            f"{grading_instruction} "
+                            f"{feedback_instruction} "
+                            f"{context} "
+                            f"{repeat_context} "
+                            f"In {language}, give specific feedback tailored towards this topic and type of speech and preferably cite specific things they said.\n"
+                            f"The speech is:\n\n{transcription_text}\n\nFeedback:"
+                        )
+                    
+                    return prompt
                 
-                if is_repeat:
-                    feedback_prompt += "\n\nNote: This is a repeat attempt on the same topic."
+                # Generate the sophisticated prompt
+                feedback_prompt = build_feedback_prompt(
+                    topic, speech_type, transcription_text, duration, language, is_repeat
+                )
                 
+                # Generate feedback with improved model and settings
                 feedback_response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model="gpt-4o-mini",  # Use the same model as your original
                     messages=[
-                        {"role": "system", "content": "You are a helpful speech coach providing constructive feedback."},
                         {"role": "user", "content": feedback_prompt}
                     ],
-                    max_tokens=300,
+                    max_tokens=500,  # Increased for more detailed feedback
                     temperature=0.7
                 )
                 
@@ -326,65 +375,9 @@ def process_recording():
                         'transcription': transcription_text,
                         'feedback': feedback,
                         'topic': topic,
-                        'speech_type': speech_type
-                    }
-                })
-                
-            else:
-                # Development: Use speech_evaluator
-                print(f"🏠 Processing with speech_evaluator - Topic: {topic}")
-                
-                # Generate filename
-                filename = speech_evaluator.audio_recorder.file_manager.generate_filename(
-                    topic, include_timestamp=True
-                )
-                
-                # Move to recordings directory
-                import shutil
-                shutil.move(temp_path, filename)
-                
-                # Calculate duration (approximate)
-                duration = len(audio_bytes) / (44100 * 2)  # Approximate for 16-bit 44.1kHz
-                
-                # Transcribe audio
-                transcription_text = speech_evaluator.transcription_service.transcribe_audio(
-                    filename, language, show_output=False
-                )
-                
-                if not transcription_text:
-                    return jsonify({
-                        'success': False,
-                        'error': 'Could not transcribe audio'
-                    }), 400
-                
-                # Store transcription
-                filename_key = os.path.basename(filename)
-                speech_evaluator.data_manager.add_speech_data(
-                    filename_key, transcription_text, topic=topic, speech_type=speech_type
-                )
-                
-                # Get previous transcription if repeat
-                previous_transcription = None
-                if is_repeat and previous_filename:
-                    previous_transcription = speech_evaluator.data_manager.get_previous_transcription(
-                        previous_filename
-                    )
-                
-                # Generate feedback
-                feedback = speech_evaluator.feedback_service.generate_feedback(
-                    topic, speech_type, transcription_text, duration, 
-                    language, is_repeat, previous_transcription
-                )
-                
-                return jsonify({
-                    'success': True,
-                    'result': {
-                        'filename': filename_key,
-                        'transcription': transcription_text,
-                        'feedback': feedback,
-                        'duration': duration,
-                        'topic': topic,
-                        'speech_type': speech_type
+                        'speech_type': speech_type,
+                        'duration': round(duration, 1),
+                        'score_type': 'short' if duration < SHORT_RECORDING_THRESHOLD else 'full'
                     }
                 })
             
