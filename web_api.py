@@ -1356,11 +1356,17 @@ def serve_frontend():
                     <i class="fas fa-microphone"></i>
                 </div>
                 <div class="status-text">Recording in Progress</div>
-                <div class="status-subtext">Speak clearly into your microphone. Click stop when finished.</div>
-                <button class="btn btn-stop" onclick="stopRecording()">
-                    <i class="fas fa-stop"></i>
-                    Stop Recording (Enter)
-                </button>
+                <div class="status-subtext">Speak clearly into your microphone. Click stop when finished or cancel to discard.</div>
+                <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center;">
+                    <button class="btn btn-stop" onclick="stopRecording()">
+                        <i class="fas fa-stop"></i>
+                        Stop Recording (Enter)
+                    </button>
+                    <button class="btn btn-secondary" onclick="cancelActiveRecording()">
+                        <i class="fas fa-times"></i>
+                        Cancel (X)
+                    </button>
+                </div>
             </div>
 
             <div class="recordings-list" id="recordingsList">
@@ -1543,6 +1549,12 @@ def serve_frontend():
                             stopRecording();
                         }
                         break;
+                    case 'x':  // Add this new case
+                        if (isRecording) {
+                            e.preventDefault();
+                            cancelActiveRecording();
+                        }
+                        break;
                     case 't':
                         if (document.getElementById('recordingSetup').classList.contains('active')) {
                             e.preventDefault();
@@ -1613,6 +1625,50 @@ def serve_frontend():
                 return audioBlob;
             }
         }
+
+        function cancelActiveRecording() {
+            if (!isRecording || !mediaRecorder) {
+                showStatus('No recording in progress', 'error');
+                return;
+            }
+
+            // Set flag to prevent processing
+            window.shouldProcessRecording = false;
+            
+            try {
+                // Stop the media recorder
+                if (mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+                
+                // Stop all media tracks
+                if (mediaRecorder.stream) {
+                    mediaRecorder.stream.getTracks().forEach(function(track) {
+                        track.stop();
+                    });
+                }
+            } catch (error) {
+                console.log('Error stopping recorder:', error);
+            }
+            
+            // Clear recording data
+            audioChunks = [];
+            recordedBlob = null;
+            isRecording = false;
+
+            // Reset UI to initial state
+            document.getElementById('recordingStatus').classList.remove('active');
+            document.getElementById('recordBtn').classList.remove('recording');
+            document.getElementById('stopBtn').classList.add('hidden');
+            document.getElementById('recordingSetup').classList.remove('active');
+            document.getElementById('feedbackSection').classList.remove('active');
+            document.getElementById('transcriptionSection').classList.add('hidden');
+            document.getElementById('audioControls').classList.add('hidden');
+            
+            showStatus('🚫 Recording cancelled - no feedback generated', 'info');
+        }
+
+
 
         function audioBufferToWav(buffer) {
             const length = buffer.length;
@@ -1690,7 +1746,15 @@ def serve_frontend():
                     const actualMimeType = mediaRecorder.mimeType || 'audio/webm';
                     const audioBlob = new Blob(audioChunks, { type: actualMimeType });
                     recordedBlob = audioBlob;
-                    processRecording();
+                    
+                    // Only process if this wasn't a cancellation
+                    if (window.shouldProcessRecording !== false) {
+                        console.log('Recording completed. MIME type:', actualMimeType, 'Size:', audioBlob.size);
+                        processRecording();
+                    }
+                    
+                    // Reset the flag
+                    window.shouldProcessRecording = true;
                 };
 
                 mediaRecorder.onerror = function(event) {
@@ -1720,6 +1784,9 @@ def serve_frontend():
                 return;
             }
 
+            // Set a flag to indicate this is a normal stop (not a cancel)
+            window.shouldProcessRecording = true;
+            
             mediaRecorder.stop();
             mediaRecorder.stream.getTracks().forEach(function(track) {
                 track.stop();
