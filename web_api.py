@@ -917,7 +917,7 @@ def serve_frontend():
             border: 2px solid transparent;
             border-radius: 20px;
             font-size: 16px;
-            color: white;
+            color: #00f2fe;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             appearance: none;
@@ -952,7 +952,7 @@ def serve_frontend():
 
         .custom-select select option {
             background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-            color: white;
+            color: #00f2fe;
             padding: 15px;
             border: none;
             font-weight: 500;
@@ -1993,9 +1993,6 @@ def serve_frontend():
         async function checkHealth() {
             try {
                 const result = await apiCall('/health');
-                if (result.success) {
-                    showStatus('✓ Connected to backend successfully (' + result.active_sessions + ' active sessions)', 'success');
-                }
             } catch (error) {
                 showStatus('❌ Cannot connect to backend. Please start the API server.', 'error');
             }
