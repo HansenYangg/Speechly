@@ -896,70 +896,114 @@ def serve_frontend():
             margin-bottom: 40px;
         }
 
-        .select-wrapper {
+        .language-selector label {
+            display: block;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: white;
+            font-size: 16px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .custom-select {
             position: relative;
             margin-top: 10px;
         }
 
-        .select-wrapper select {
+        .custom-select select {
             width: 100%;
-            padding: 18px 50px 18px 24px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 16px;
+            padding: 20px 60px 20px 28px;
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.2) 0%, rgba(0, 242, 254, 0.1) 100%);
+            border: 2px solid transparent;
+            border-radius: 20px;
             font-size: 16px;
             color: white;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             appearance: none;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(79, 172, 254, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 1px 0 rgba(255, 255, 255, 0.1);
+            font-weight: 500;
+            position: relative;
+            outline: none;
+        }
+
+        .custom-select select:hover {
+            transform: translateY(-3px) scale(1.02);
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.3) 0%, rgba(0, 242, 254, 0.15) 100%);
+            box-shadow: 
+                0 15px 45px rgba(79, 172, 254, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .custom-select select:focus {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.25) 0%, rgba(0, 242, 254, 0.12) 100%);
+            border-color: rgba(79, 172, 254, 0.5);
+            box-shadow: 
+                0 0 0 4px rgba(79, 172, 254, 0.2),
+                0 12px 40px rgba(79, 172, 254, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        .custom-select select option {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: white;
+            padding: 15px;
+            border: none;
             font-weight: 500;
         }
 
-        .select-wrapper select:focus {
-            outline: none;
-            border-color: rgba(79, 172, 254, 0.6);
-            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
-            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.2), 0 8px 32px rgba(0,0,0,0.2);
-            transform: translateY(-2px);
+        .custom-select select option:hover {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.3) 0%, rgba(0, 242, 254, 0.2) 100%);
         }
 
-        .select-wrapper select:hover {
-            border-color: rgba(255,255,255,0.5);
-            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        .custom-select::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+            border-radius: 20px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        .select-wrapper select option {
-            background: #2d3748;
-            color: white;
-            padding: 12px;
-            border: none;
+        .custom-select:hover::before {
+            opacity: 1;
         }
 
-        .select-wrapper::after {
+        .custom-select::after {
             content: '\\f0d7';
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
             position: absolute;
-            right: 20px;
+            right: 25px;
             top: 50%;
             transform: translateY(-50%);
-            color: rgba(255,255,255,0.8);
+            color: rgba(255,255,255,0.9);
             pointer-events: none;
-            font-size: 18px;
-            transition: all 0.3s ease;
+            font-size: 20px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        .select-wrapper:hover::after {
+        .custom-select:hover::after {
             color: white;
-            transform: translateY(-50%) scale(1.1);
+            transform: translateY(-50%) scale(1.2) rotate(180deg);
+            text-shadow: 0 0 12px rgba(79, 172, 254, 0.6);
         }
 
-        .select-wrapper select:focus + ::after {
+        .custom-select select:focus + ::after {
             color: #4facfe;
+            transform: translateY(-50%) scale(1.1) rotate(180deg);
         }
 
         .controls-grid {
@@ -1398,7 +1442,7 @@ def serve_frontend():
             
             <div class="language-selector">
                 <label for="languageSelect" style="color: white; font-weight: 600;">Choose your target language:</label>
-                <div class="select-wrapper">
+                <div class="custom-select">
                     <select id="languageSelect">
                         <option value="en">en: English</option>
                         <option value="ko">ko: Korean</option>
