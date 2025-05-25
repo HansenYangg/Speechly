@@ -903,33 +903,63 @@ def serve_frontend():
 
         .select-wrapper select {
             width: 100%;
-            padding: 18px 24px;
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.2);
+            padding: 18px 50px 18px 24px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+            border: 2px solid rgba(255,255,255,0.3);
             border-radius: 16px;
             font-size: 16px;
-            color: #4a5568;
+            color: white;
             cursor: pointer;
             transition: all 0.3s ease;
             appearance: none;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            font-weight: 500;
         }
 
         .select-wrapper select:focus {
             outline: none;
-            border-color: rgba(255,255,255,0.4);
-            background: rgba(255,255,255,0.15);
+            border-color: rgba(79, 172, 254, 0.6);
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.2), 0 8px 32px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+
+        .select-wrapper select:hover {
+            border-color: rgba(255,255,255,0.5);
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .select-wrapper select option {
+            background: #2d3748;
+            color: white;
+            padding: 12px;
+            border: none;
         }
 
         .select-wrapper::after {
-            content: '\\f107';
+            content: '\\f0d7';
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
             position: absolute;
             right: 20px;
             top: 50%;
             transform: translateY(-50%);
-            color: rgba(255,255,255,0.7);
+            color: rgba(255,255,255,0.8);
             pointer-events: none;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .select-wrapper:hover::after {
+            color: white;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .select-wrapper select:focus + ::after {
+            color: #4facfe;
         }
 
         .controls-grid {
