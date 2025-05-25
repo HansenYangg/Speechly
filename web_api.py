@@ -546,8 +546,8 @@ def process_recording():
                     messages=[
                         {"role": "user", "content": feedback_prompt}
                     ],
-                    max_tokens=500,
-                    temperature=0.7
+                    max_tokens=1500,
+                    temperature=0.5
                 )
                 
                 feedback = feedback_response.choices[0].message.content
@@ -663,7 +663,7 @@ def generate_feedback():
                     "role": "user", 
                     "content": f"Provide speech feedback for topic '{topic}' of type '{speech_type}'. Transcription: {transcription}"
                 }],
-                max_tokens=300
+                max_tokens=1500
             )
             feedback = feedback_response.choices[0].message.content
         else:
