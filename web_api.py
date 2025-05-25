@@ -494,13 +494,12 @@ def process_recording():
                         "Note good things they did and things they can improve on, and don't be overly nice. "
                     )
                     
-                    context = f"For context, the speech was '{topic}' for a {speech_type}."
                     
                     repeat_context = ""
                     if is_repeat and previous_transcription:
                         repeat_context = f"Also, the user has already done a speech on this topic. Here is the original transcription: {previous_transcription}. Compare the two and note improvements."
                     
-                    language_instruction = f"Try to tailor to their specific speech style. Make sure to do this in {language}."
+                    language_instruction = f"Try to tailor the feedback based off the context of the user presentation. Make sure to do this in {language}."
                     
                     if MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
                         prompt = (
@@ -511,23 +510,27 @@ def process_recording():
                             f"Speech type: {speech_type}\n"
                             f"Transcription: '{transcription_text}'\n\n"
                             f"{repeat_context}\n"
-                            f"Please grade on a scale of 1-100 considering the potential lack of content and give constructive feedback without being overly nice. "
-                            f"You can choose to give separate scores for certain things, like 18/20 for structure, 20/20 for conclusion, etc. "
+                            f"Please grade out of a total 100 points and give constructive feedback without being overly nice. "
+                            f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
                             f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
+                            f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
+                            f"Note good things they did and things they can improve on, and don't be overly nice.\n"
                             f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
                             f"{language_instruction}"
                         )
                     else:
                         prompt = (
                             f"Please evaluate and critique it given the following topic and type of the speech. "
-                            f"Give appropriate feedback accordingly based on these:\n\n"
+                            f"Give appropriate feedback accordingly based on this information about the presentation:\n\n"
                             f"Speech topic: '{topic}'\n"
                             f"Speech type: {speech_type}\n"
                             f"Transcription: '{transcription_text}'\n\n"
                             f"{repeat_context}\n"
-                            f"Please grade on a scale of 1-100 considering the potential lack of content and give constructive feedback without being overly nice. "
-                            f"You can choose to give separate scores for certain things, like 18/20 for structure, 20/20 for conclusion, etc. "
+                            f"Please grade out of a total 100 points and give constructive feedback without being overly nice. "
+                            f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
                             f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
+                            f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
+                            f"Note good things they did and things they can improve on, and don't be overly nice.\n"
                             f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
                             f"{language_instruction}"
                         )
