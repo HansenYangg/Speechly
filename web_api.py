@@ -877,6 +877,7 @@ def serve_frontend():
             font-size: 1.5rem;
             font-weight: 700;
             color: #2d3748;
+            min-height: 40px;
         }
 
         .section-icon {
@@ -955,6 +956,9 @@ def serve_frontend():
             justify-content: center;
             gap: 12px;
             box-shadow: var(--shadow-lg);
+            min-height: 60px;
+            min-width: 200px;
+            white-space: nowrap;
         }
 
         .btn::before {
@@ -1046,6 +1050,7 @@ def serve_frontend():
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            min-height: 20px;
         }
 
         .input-group input {
@@ -1181,7 +1186,8 @@ def serve_frontend():
             padding: 12px 20px;
             font-size: 14px;
             border-radius: 12px;
-            min-width: auto;
+            min-width: 100px;
+            min-height: 44px;
         }
 
         .feedback-section {
