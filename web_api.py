@@ -17,6 +17,7 @@ try:
     from exceptions import *
     from logger import setup_logger
     from validator import Validator
+    from translation import TranslationService  # Add translation service import
     PRODUCTION_MODE = False
     print("🏠 Development mode: All modules loaded")
 except ImportError as e:
@@ -32,6 +33,13 @@ except ImportError as e:
     
     class ValidationError(Exception):
         pass
+    
+    # Mock translation service for production mode
+    class TranslationService:
+        @staticmethod
+        def translate(text, target_language):
+            # In production, we'll handle translation in the frontend
+            return text
 
 load_dotenv()
 
@@ -216,33 +224,64 @@ def validate_configuration():
 
 @app.route('/api/languages', methods=['GET'])
 def get_languages():
-    if PRODUCTION_MODE:
-        LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'tr', 'nl', 'bn']
-        LANGUAGE_DISPLAY = [
-            "en: English",
-            "es: Spanish", 
-            "fr: French",
-            "de: German",
-            "it: Italian",
-            "pt: Portuguese", 
-            "ru: Russian",
-            "ja: Japanese",
-            "ko: Korean",
-            "zh: Chinese",
-            "ar: Arabic",
-            "hi: Hindi",
-            "tr: Turkish",
-            "nl: Dutch",
-            "bn: Bengali"
-        ]
-    else:
-        from config import LANGUAGES, LANGUAGE_DISPLAY
+    # Updated to include all 16 languages with proper language codes
+    LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'tr', 'nl', 'bn', 'zh-CN']
+    LANGUAGE_DISPLAY = [
+        "en: English",
+        "es: Spanish", 
+        "fr: French",
+        "de: German",
+        "it: Italian",
+        "pt: Portuguese", 
+        "ru: Russian",
+        "ja: Japanese",
+        "ko: Korean",
+        "zh: Chinese",
+        "ar: Arabic",
+        "hi: Hindi",
+        "tr: Turkish",
+        "nl: Dutch",
+        "bn: Bengali",
+        "zh-CN: Chinese (Simplified)"
+    ]
+    
+    if not PRODUCTION_MODE:
+        try:
+            from config import LANGUAGES as CONFIG_LANGUAGES, LANGUAGE_DISPLAY as CONFIG_DISPLAY
+            # Use config file if available in development
+            LANGUAGES = CONFIG_LANGUAGES
+            LANGUAGE_DISPLAY = CONFIG_DISPLAY
+        except ImportError:
+            pass  # Use hardcoded values above
     
     return jsonify({
         'success': True,
         'languages': LANGUAGES,
         'display_options': LANGUAGE_DISPLAY
     })
+
+# Language mapping for OpenAI Whisper API compatibility
+def map_language_for_whisper(language):
+    """Map language codes to Whisper-compatible format"""
+    language_mapping = {
+        'zh-CN': 'zh',  # Map zh-CN to zh for Whisper
+        'zh': 'zh',     # Keep zh as is
+        'en': 'en',
+        'es': 'es',
+        'fr': 'fr',
+        'de': 'de',
+        'it': 'it',
+        'pt': 'pt',
+        'ru': 'ru',
+        'ja': 'ja',
+        'ko': 'ko',
+        'ar': 'ar',
+        'hi': 'hi',
+        'tr': 'tr',
+        'nl': 'nl',
+        'bn': 'bn'
+    }
+    return language_mapping.get(language, 'en')
 
 @app.route('/api/recordings', methods=['GET'])
 def list_recordings():
@@ -431,7 +470,8 @@ def process_recording():
             topic = re.sub(r'[^\w\s-]', '', topic)[:100]
             speech_type = re.sub(r'[^\w\s-]', '', speech_type)[:50]
             
-            valid_languages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'tr', 'nl', 'bn']
+            # Updated valid languages list with all 16 languages
+            valid_languages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'tr', 'nl', 'bn', 'zh-CN']
             if language not in valid_languages:
                 language = 'en'
         else:
@@ -455,11 +495,14 @@ def process_recording():
             if PRODUCTION_MODE:
                 print(f"🌐 Processing with OpenAI - Session: {session_id}, Topic: {topic}, Language: {language}")
                 
+                # Map language for Whisper compatibility
+                whisper_language = map_language_for_whisper(language)
+                
                 with open(temp_path, 'rb') as audio_file:
                     transcription = client.audio.transcriptions.create(
                         model="whisper-1",
                         file=audio_file,
-                        language=language if language != 'zh' else 'zh-CN'
+                        language=whisper_language
                     )
                 
                 transcription_text = transcription.text
@@ -500,7 +543,32 @@ def process_recording():
                     if is_repeat and previous_transcription:
                         repeat_context = f"Also, the user has already done a speech on this topic. Here is the original transcription: {previous_transcription}. Compare the two and note improvements."
                     
-                    language_instruction = f"Try to tailor to their specific speech style. Make sure to do this in {language}."
+                    # Enhanced language instruction to handle all languages
+                    language_names = {
+                        'en': 'English',
+                        'es': 'Spanish',
+                        'fr': 'French',
+                        'de': 'German',
+                        'it': 'Italian',
+                        'pt': 'Portuguese',
+                        'ru': 'Russian',
+                        'ja': 'Japanese',
+                        'ko': 'Korean',
+                        'zh': 'Chinese',
+                        'zh-CN': 'Chinese (Simplified)',
+                        'ar': 'Arabic',
+                        'hi': 'Hindi',
+                        'tr': 'Turkish',
+                        'nl': 'Dutch',
+                        'bn': 'Bengali'
+                    }
+                    
+                    language_name = language_names.get(language, 'English')
+                    
+                    if language == 'en':
+                        language_instruction = "Please provide your feedback in English."
+                    else:
+                        language_instruction = f"Please provide your feedback in {language_name} ({language}). Make sure to tailor to their specific speech style."
                     
                     if MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
                         prompt = (
@@ -575,7 +643,8 @@ def process_recording():
                         'topic': topic,
                         'speech_type': speech_type,
                         'duration': round(duration, 1),
-                        'score_type': 'short' if duration < SHORT_RECORDING_THRESHOLD else 'full'
+                        'score_type': 'short' if duration < SHORT_RECORDING_THRESHOLD else 'full',
+                        'language': language
                     }
                 })
             
@@ -654,11 +723,34 @@ def generate_feedback():
             }), 400
         
         if PRODUCTION_MODE:
+            # Enhanced language handling for feedback generation
+            language_names = {
+                'en': 'English',
+                'es': 'Spanish',
+                'fr': 'French',
+                'de': 'German',
+                'it': 'Italian',
+                'pt': 'Portuguese',
+                'ru': 'Russian',
+                'ja': 'Japanese',
+                'ko': 'Korean',
+                'zh': 'Chinese',
+                'zh-CN': 'Chinese (Simplified)',
+                'ar': 'Arabic',
+                'hi': 'Hindi',
+                'tr': 'Turkish',
+                'nl': 'Dutch',
+                'bn': 'Bengali'
+            }
+            
+            language_name = language_names.get(language, 'English')
+            language_instruction = f"Please provide your feedback in {language_name} ({language})." if language != 'en' else "Please provide your feedback in English."
+            
             feedback_response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{
                     "role": "user", 
-                    "content": f"Provide speech feedback for topic '{topic}' of type '{speech_type}'. Transcription: {transcription}"
+                    "content": f"Provide speech feedback for topic '{topic}' of type '{speech_type}'. Transcription: {transcription}. {language_instruction}"
                 }],
                 max_tokens=300
             )
@@ -1445,21 +1537,21 @@ def serve_frontend():
                 <div class="custom-select">
                     <select id="languageSelect">
                         <option value="en">en: English</option>
-                        <option value="ko">ko: Korean</option>
-                        <option value="zh-CN">zh-CN: Chinese (Simplified)</option>
+                        <option value="es">es: Spanish</option>
+                        <option value="fr">fr: French</option>
+                        <option value="de">de: German</option>
                         <option value="it">it: Italian</option>
-                        <option value="ja">ja: Japanese</option>
                         <option value="pt">pt: Portuguese</option>
                         <option value="ru">ru: Russian</option>
+                        <option value="ja">ja: Japanese</option>
+                        <option value="ko">ko: Korean</option>
+                        <option value="zh">zh: Chinese</option>
                         <option value="ar">ar: Arabic</option>
                         <option value="hi">hi: Hindi</option>
                         <option value="tr">tr: Turkish</option>
                         <option value="nl">nl: Dutch</option>
-                        <option value="fr">fr: French</option>
-                        <option value="es">es: Spanish</option>
-                        <option value="de">de: German</option>
                         <option value="bn">bn: Bengali</option>
-                        <option value="zh">zh: Mandarin Chinese</option>
+                        <option value="zh-CN">zh-CN: Chinese (Simplified)</option>
                     </select>
                 </div>
             </div>
@@ -1602,7 +1694,7 @@ def serve_frontend():
         let recordings = [];
         let sessionId = null;
 
-        const API_BASE = 'https://speakeasyy.onrender.com/api';
+        const API_BASE = window.location.origin + '/api';
 
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -1633,12 +1725,7 @@ def serve_frontend():
                 if (result.success) {
                     sessionId = result.session_id;
                     document.getElementById('sessionId').textContent = sessionId.substring(0, 8) + '...';
-                    console.log('Session initialized:', sessionId);
-                } else {
-                    throw new Error('Failed to create session');
-                }
-            } catch (error) {
-                console.error('Failed to initialize session:', error);
+                    console.error('Failed to initialize session:', error);
                 sessionId = generateUUID();
                 document.getElementById('sessionId').textContent = sessionId.substring(0, 8) + '... (offline)';
             }
@@ -1692,6 +1779,7 @@ def serve_frontend():
             }
         }
 
+        // Enhanced translations object with all 16 languages
         const translations = {
             en: {
                 title: "AI Speech Evaluator",
@@ -1825,6 +1913,171 @@ def serve_frontend():
                 recordingTooShort: "Aufnahme Zu Kurz",
                 recordingTooShortText: "Entschuldigung! Die Aufnahme war zu kurz um Feedback zu generieren. Bitte versuchen Sie es erneut mit einer längeren Rede."
             },
+            it: {
+                title: "Valutatore di Discorsi IA",
+                subtitle: "Trasforma le tue abilità oratorie con feedback e analisi all'avanguardia basati sull'IA",
+                sessionText: "La Tua Sessione:",
+                languageLabel: "Scegli la tua lingua target:",
+                languageSection: "Selezione Lingua",
+                actionsSection: "Azioni Rapide",
+                recordBtn: "Registra Discorso (R)",
+                viewBtn: "Visualizza Registrazioni (L)",
+                playBtn: "Riproduci Registrazione (P)",
+                stopBtn: "Ferma Registrazione (Invio)",
+                setupSection: "Configurazione Registrazione",
+                topicLabel: "Argomento del Discorso",
+                topicPlaceholder: "Di cosa parlerai?",
+                typeLabel: "Tipo di Discorso",
+                typePlaceholder: "es., colloquio, presentazione, dibattito",
+                repeatLabel: "Questo è un secondo tentativo sullo stesso argomento",
+                startBtn: "Inizia Registrazione (T)",
+                cancelBtn: "Annulla (B)",
+                recordingText: "Registrazione in Corso",
+                recordingSubtext: "Parla chiaramente nel microfono. Clicca ferma quando finito o annulla per scartare.",
+                cancelActiveBtn: "Annulla (X)",
+                recordingsSection: "Le Tue Registrazioni",
+                feedbackSection: "Feedback e Analisi IA",
+                transcriptionSection: "Trascrizione del Discorso",
+                playbackSection: "Riproduzione Registrazione",
+                noRecordings: "Nessuna registrazione trovata",
+                noRecordingsSubtext: "Crea la tua prima registrazione per iniziare!",
+                playRecBtn: "Riproduci",
+                deleteBtn: "Elimina",
+                recordingTooShort: "Registrazione Troppo Breve",
+                recordingTooShortText: "Spiacente! La registrazione era troppo breve per generare feedback. Riprova con un discorso più lungo."
+            },
+            pt: {
+                title: "Avaliador de Fala IA",
+                subtitle: "Transforme suas habilidades de fala com feedback e análise de ponta baseados em IA",
+                sessionText: "Sua Sessão:",
+                languageLabel: "Escolha seu idioma alvo:",
+                languageSection: "Seleção de Idioma",
+                actionsSection: "Ações Rápidas",
+                recordBtn: "Gravar Discurso (R)",
+                viewBtn: "Ver Gravações (L)",
+                playBtn: "Reproduzir Gravação (P)",
+                stopBtn: "Parar Gravação (Enter)",
+                setupSection: "Configuração de Gravação",
+                topicLabel: "Tópico do Discurso",
+                topicPlaceholder: "Sobre o que você vai falar?",
+                typeLabel: "Tipo de Discurso",
+                typePlaceholder: "ex., entrevista, apresentação, debate",
+                repeatLabel: "Esta é uma segunda tentativa no mesmo tópico",
+                startBtn: "Iniciar Gravação (T)",
+                cancelBtn: "Cancelar (B)",
+                recordingText: "Gravação em Andamento",
+                recordingSubtext: "Fale claramente no microfone. Clique parar quando terminar ou cancelar para descartar.",
+                cancelActiveBtn: "Cancelar (X)",
+                recordingsSection: "Suas Gravações",
+                feedbackSection: "Feedback e Análise IA",
+                transcriptionSection: "Transcrição do Discurso",
+                playbackSection: "Reprodução da Gravação",
+                noRecordings: "Nenhuma gravação encontrada",
+                noRecordingsSubtext: "Crie sua primeira gravação para começar!",
+                playRecBtn: "Reproduzir",
+                deleteBtn: "Excluir",
+                recordingTooShort: "Gravação Muito Curta",
+                recordingTooShortText: "Desculpe! A gravação foi muito curta para gerar feedback. Tente novamente com um discurso mais longo."
+            },
+            ru: {
+                title: "ИИ-Оценщик Речи",
+                subtitle: "Преобразите свои навыки речи с помощью передовой обратной связи и анализа на основе ИИ",
+                sessionText: "Ваша Сессия:",
+                languageLabel: "Выберите целевой язык:",
+                languageSection: "Выбор Языка",
+                actionsSection: "Быстрые Действия",
+                recordBtn: "Записать Речь (R)",
+                viewBtn: "Просмотр Записей (L)",
+                playBtn: "Воспроизвести Запись (P)",
+                stopBtn: "Остановить Запись (Enter)",
+                setupSection: "Настройка Записи",
+                topicLabel: "Тема Речи",
+                topicPlaceholder: "О чём вы будете говорить?",
+                typeLabel: "Тип Речи",
+                typePlaceholder: "напр., интервью, презентация, дебаты",
+                repeatLabel: "Это вторая попытка на ту же тему",
+                startBtn: "Начать Запись (T)",
+                cancelBtn: "Отменить (B)",
+                recordingText: "Идёт Запись",
+                recordingSubtext: "Говорите чётко в микрофон. Нажмите стоп по окончании или отмена для сброса.",
+                cancelActiveBtn: "Отменить (X)",
+                recordingsSection: "Ваши Записи",
+                feedbackSection: "ИИ Обратная Связь и Анализ",
+                transcriptionSection: "Транскрипция Речи",
+                playbackSection: "Воспроизведение Записи",
+                noRecordings: "Записи не найдены",
+                noRecordingsSubtext: "Создайте свою первую запись чтобы начать!",
+                playRecBtn: "Воспроизвести",
+                deleteBtn: "Удалить",
+                recordingTooShort: "Слишком Короткая Запись",
+                recordingTooShortText: "Извините! Запись была слишком короткой для генерации обратной связи. Попробуйте снова с более длинной речью."
+            },
+            ja: {
+                title: "AIスピーチ評価器",
+                subtitle: "最先端のAI駆動フィードバックと分析でスピーキングスキルを変革",
+                sessionText: "あなたのセッション:",
+                languageLabel: "対象言語を選択:",
+                languageSection: "言語選択",
+                actionsSection: "クイックアクション",
+                recordBtn: "スピーチ録音 (R)",
+                viewBtn: "録音を表示 (L)",
+                playBtn: "録音再生 (P)",
+                stopBtn: "録音停止 (Enter)",
+                setupSection: "録音設定",
+                topicLabel: "スピーチトピック",
+                topicPlaceholder: "何について話しますか？",
+                typeLabel: "スピーチタイプ",
+                typePlaceholder: "例：面接、プレゼンテーション、討論",
+                repeatLabel: "これは同じトピックの再試行です",
+                startBtn: "録音開始 (T)",
+                cancelBtn: "キャンセル (B)",
+                recordingText: "録音中",
+                recordingSubtext: "マイクに向かってはっきりと話してください。終了時は停止をクリック、破棄する場合はキャンセルをクリック。",
+                cancelActiveBtn: "キャンセル (X)",
+                recordingsSection: "あなたの録音",
+                feedbackSection: "AIフィードバック＆分析",
+                transcriptionSection: "スピーチ転写",
+                playbackSection: "録音再生",
+                noRecordings: "録音が見つかりません",
+                noRecordingsSubtext: "最初の録音を作成して始めましょう！",
+                playRecBtn: "再生",
+                deleteBtn: "削除",
+                recordingTooShort: "録音が短すぎます",
+                recordingTooShortText: "申し訳ありません！録音が短すぎてフィードバックを生成できません。より長いスピーチで再試行してください。"
+            },
+            ko: {
+                title: "AI 연설 평가기",
+                subtitle: "최첨단 AI 기반 피드백과 분석으로 말하기 기술을 변화시키세요",
+                sessionText: "당신의 세션:",
+                languageLabel: "목표 언어를 선택하세요:",
+                languageSection: "언어 선택",
+                actionsSection: "빠른 작업",
+                recordBtn: "연설 녹음 (R)",
+                viewBtn: "녹음 보기 (L)",
+                playBtn: "녹음 재생 (P)",
+                stopBtn: "녹음 중지 (Enter)",
+                setupSection: "녹음 설정",
+                topicLabel: "연설 주제",
+                topicPlaceholder: "무엇에 대해 말할 것인가요?",
+                typeLabel: "연설 유형",
+                typePlaceholder: "예: 면접, 발표, 토론",
+                repeatLabel: "같은 주제로 다시 시도하는 것입니다",
+                startBtn: "녹음 시작 (T)",
+                cancelBtn: "취소 (B)",
+                recordingText: "녹음 진행 중",
+                recordingSubtext: "마이크에 명확하게 말하세요. 완료되면 중지를 클릭하거나 취소하여 폐기하세요.",
+                cancelActiveBtn: "취소 (X)",
+                recordingsSection: "당신의 녹음",
+                feedbackSection: "AI 피드백 및 분석",
+                transcriptionSection: "연설 전사",
+                playbackSection: "녹음 재생",
+                noRecordings: "녹음을 찾을 수 없음",
+                noRecordingsSubtext: "시작하려면 첫 번째 녹음을 만드세요!",
+                playRecBtn: "재생",
+                deleteBtn: "삭제",
+                recordingTooShort: "녹음이 너무 짧음",
+                recordingTooShortText: "죄송합니다! 녹음이 너무 짧아서 피드백을 생성할 수 없습니다. 더 긴 연설로 다시 시도해 주세요."
+            },
             zh: {
                 title: "AI语音评估器",
                 subtitle: "用尖端的AI驱动反馈和分析改变您的演讲技能",
@@ -1858,38 +2111,203 @@ def serve_frontend():
                 recordingTooShort: "录音太短",
                 recordingTooShortText: "抱歉！录音太短无法生成反馈。请用更长的演讲重试。"
             },
-            ja: {
-                title: "AIスピーチ評価器",
-                subtitle: "最先端のAI駆動フィードバックと分析でスピーキングスキルを変革",
-                sessionText: "あなたのセッション：",
-                languageLabel: "対象言語を選択：",
-                languageSection: "言語選択",
-                actionsSection: "クイックアクション",
-                recordBtn: "スピーチ録音 (R)",
-                viewBtn: "録音を表示 (L)",
-                playBtn: "録音再生 (P)",
-                stopBtn: "録音停止 (Enter)",
-                setupSection: "録音設定",
-                topicLabel: "スピーチトピック",
-                topicPlaceholder: "何について話しますか？",
-                typeLabel: "スピーチタイプ",
-                typePlaceholder: "例：面接、プレゼンテーション、討論",
-                repeatLabel: "これは同じトピックの再試行です",
-                startBtn: "録音開始 (T)",
-                cancelBtn: "キャンセル (B)",
-                recordingText: "録音中",
-                recordingSubtext: "マイクに向かってはっきりと話してください。終了時は停止をクリック、破棄する場合はキャンセルをクリック。",
-                cancelActiveBtn: "キャンセル (X)",
-                recordingsSection: "あなたの録音",
-                feedbackSection: "AIフィードバック＆分析",
-                transcriptionSection: "スピーチ転写",
-                playbackSection: "録音再生",
-                noRecordings: "録音が見つかりません",
-                noRecordingsSubtext: "最初の録音を作成して始めましょう！",
-                playRecBtn: "再生",
-                deleteBtn: "削除",
-                recordingTooShort: "録音が短すぎます",
-                recordingTooShortText: "申し訳ありません！録音が短すぎてフィードバックを生成できません。より長いスピーチで再試行してください。"
+            ar: {
+                title: "مقيم الخطابات بالذكاء الاصطناعي",
+                subtitle: "حول مهاراتك في التحدث بتحليل وملاحظات متطورة مدعومة بالذكاء الاصطناعي",
+                sessionText: "جلستك:",
+                languageLabel: "اختر لغتك المستهدفة:",
+                languageSection: "اختيار اللغة",
+                actionsSection: "إجراءات سريعة",
+                recordBtn: "تسجيل خطاب (R)",
+                viewBtn: "عرض التسجيلات (L)",
+                playBtn: "تشغيل التسجيل (P)",
+                stopBtn: "إيقاف التسجيل (Enter)",
+                setupSection: "إعداد التسجيل",
+                topicLabel: "موضوع الخطاب",
+                topicPlaceholder: "عن ماذا ستتحدث؟",
+                typeLabel: "نوع الخطاب",
+                typePlaceholder: "مثل: مقابلة، عرض تقديمي، مناقشة",
+                repeatLabel: "هذه محاولة ثانية لنفس الموضوع",
+                startBtn: "بدء التسجيل (T)",
+                cancelBtn: "إلغاء (B)",
+                recordingText: "التسجيل جاري",
+                recordingSubtext: "تحدث بوضوح في الميكروفون. انقر إيقاف عند الانتهاء أو إلغاء للتجاهل.",
+                cancelActiveBtn: "إلغاء (X)",
+                recordingsSection: "تسجيلاتك",
+                feedbackSection: "ملاحظات وتحليل الذكاء الاصطناعي",
+                transcriptionSection: "نسخ الخطاب",
+                playbackSection: "تشغيل التسجيل",
+                noRecordings: "لم توجد تسجيلات",
+                noRecordingsSubtext: "أنشئ تسجيلك الأول للبدء!",
+                playRecBtn: "تشغيل",
+                deleteBtn: "حذف",
+                recordingTooShort: "التسجيل قصير جداً",
+                recordingTooShortText: "عذراً! كان التسجيل قصيراً جداً لتوليد ملاحظات. يرجى المحاولة مرة أخرى بخطاب أطول."
+            },
+            hi: {
+                title: "एआई भाषण मूल्यांकनकर्ता",
+                subtitle: "अत्याधुनिक एआई-संचालित फीडबैक और विश्लेषण के साथ अपने बोलने के कौशल को बदलें",
+                sessionText: "आपका सत्र:",
+                languageLabel: "अपनी लक्षित भाषा चुनें:",
+                languageSection: "भाषा चयन",
+                actionsSection: "त्वरित क्रियाएं",
+                recordBtn: "भाषण रिकॉर्ड करें (R)",
+                viewBtn: "रिकॉर्डिंग देखें (L)",
+                playBtn: "रिकॉर्डिंग चलाएं (P)",
+                stopBtn: "रिकॉर्डिंग रोकें (Enter)",
+                setupSection: "रिकॉर्डिंग सेटअप",
+                topicLabel: "भाषण विषय",
+                topicPlaceholder: "आप किस बारे में बात करेंगे?",
+                typeLabel: "भाषण प्रकार",
+                typePlaceholder: "जैसे: साक्षात्कार, प्रस्तुति, बहस",
+                repeatLabel: "यह समान विषय पर दूसरा प्रयास है",
+                startBtn: "रिकॉर्डिंग शुरू करें (T)",
+                cancelBtn: "रद्द करें (B)",
+                recordingText: "रिकॉर्डिंग चल रही है",
+                recordingSubtext: "माइक्रोफोन में स्पष्ट रूप से बोलें। समाप्त होने पर स्टॉप क्लिक करें या रद्द करने के लिए कैंसल करें।",
+                cancelActiveBtn: "रद्द करें (X)",
+                recordingsSection: "आपकी रिकॉर्डिंग",
+                feedbackSection: "एआई फीडबैक और विश्लेषण",
+                transcriptionSection: "भाषण प्रतिलेखन",
+                playbackSection: "रिकॉर्डिंग प्लेबैक",
+                noRecordings: "कोई रिकॉर्डिंग नहीं मिली",
+                noRecordingsSubtext: "शुरू करने के लिए अपनी पहली रिकॉर्डिंग बनाएं!",
+                playRecBtn: "चलाएं",
+                deleteBtn: "हटाएं",
+                recordingTooShort: "रिकॉर्डिंग बहुत छोटी",
+                recordingTooShortText: "खुशी! रिकॉर्डिंग फीडबैक उत्पन्न करने के लिए बहुत छोटी थी। कृपया लंबे भाषण के साथ पुनः प्रयास करें।"
+            },
+            tr: {
+                title: "AI Konuşma Değerlendiricisi",
+                subtitle: "En gelişmiş AI destekli geri bildirim ve analiz ile konuşma becerilerinizi dönüştürün",
+                sessionText: "Oturumunuz:",
+                languageLabel: "Hedef dilinizi seçin:",
+                languageSection: "Dil Seçimi",
+                actionsSection: "Hızlı İşlemler",
+                recordBtn: "Konuşma Kaydet (R)",
+                viewBtn: "Kayıtları Görüntüle (L)",
+                playBtn: "Kaydı Oynat (P)",
+                stopBtn: "Kaydı Durdur (Enter)",
+                setupSection: "Kayıt Kurulumu",
+                topicLabel: "Konuşma Konusu",
+                topicPlaceholder: "Ne hakkında konuşacaksınız?",
+                typeLabel: "Konuşma Türü",
+                typePlaceholder: "örn., mülakat, sunum, tartışma",
+                repeatLabel: "Bu aynı konuda ikinci bir deneme",
+                startBtn: "Kaydı Başlat (T)",
+                cancelBtn: "İptal (B)",
+                recordingText: "Kayıt Devam Ediyor",
+                recordingSubtext: "Mikrofona açık bir şekilde konuşun. Bittiğinde dur'a tıklayın veya atmak için iptal edin.",
+                cancelActiveBtn: "İptal (X)",
+                recordingsSection: "Kayıtlarınız",
+                feedbackSection: "AI Geri Bildirim ve Analiz",
+                transcriptionSection: "Konuşma Transkripti",
+                playbackSection: "Kayıt Oynatma",
+                noRecordings: "Kayıt bulunamadı",
+                noRecordingsSubtext: "Başlamak için ilk kaydınızı oluşturun!",
+                playRecBtn: "Oynat",
+                deleteBtn: "Sil",
+                recordingTooShort: "Kayıt Çok Kısa",
+                recordingTooShortText: "Üzgünüz! Kayıt geri bildirim oluşturmak için çok kısaydı. Lütfen daha uzun bir konuşma ile tekrar deneyin."
+            },
+            nl: {
+                title: "AI Spraak Evaluator",
+                subtitle: "Transformeer je spreekvaardigheden met geavanceerde AI-gedreven feedback en analyse",
+                sessionText: "Jouw Sessie:",
+                languageLabel: "Kies je doeltaal:",
+                languageSection: "Taal Selectie",
+                actionsSection: "Snelle Acties",
+                recordBtn: "Spraak Opnemen (R)",
+                viewBtn: "Opnames Bekijken (L)",
+                playBtn: "Opname Afspelen (P)",
+                stopBtn: "Opname Stoppen (Enter)",
+                setupSection: "Opname Instelling",
+                topicLabel: "Spraak Onderwerp",
+                topicPlaceholder: "Waar ga je over spreken?",
+                typeLabel: "Spraak Type",
+                typePlaceholder: "bijv., interview, presentatie, debat",
+                repeatLabel: "Dit is een tweede poging op hetzelfde onderwerp",
+                startBtn: "Opname Starten (T)",
+                cancelBtn: "Annuleren (B)",
+                recordingText: "Opname Bezig",
+                recordingSubtext: "Spreek duidelijk in je microfoon. Klik stop wanneer klaar of annuleer om te verwerpen.",
+                cancelActiveBtn: "Annuleren (X)",
+                recordingsSection: "Jouw Opnames",
+                feedbackSection: "AI Feedback & Analyse",
+                transcriptionSection: "Spraak Transcriptie",
+                playbackSection: "Opname Afspelen",
+                noRecordings: "Geen opnames gevonden",
+                noRecordingsSubtext: "Maak je eerste opname om te beginnen!",
+                playRecBtn: "Afspelen",
+                deleteBtn: "Verwijderen",
+                recordingTooShort: "Opname Te Kort",
+                recordingTooShortText: "Sorry! De opname was te kort om feedback te genereren. Probeer opnieuw met een langere spraak."
+            },
+            bn: {
+                title: "এআই বক্তৃতা মূল্যায়নকারী",
+                subtitle: "অত্যাধুনিক এআই-চালিত প্রতিক্রিয়া এবং বিশ্লেষণের সাথে আপনার কথা বলার দক্ষতা রূপান্তরিত করুন",
+                sessionText: "আপনার সেশন:",
+                languageLabel: "আপনার লক্ষ্য ভাষা বেছে নিন:",
+                languageSection: "ভাষা নির্বাচন",
+                actionsSection: "দ্রুত ক্রিয়া",
+                recordBtn: "বক্তৃতা রেকর্ড করুন (R)",
+                viewBtn: "রেকর্ডিং দেখুন (L)",
+                playBtn: "রেকর্ডিং চালান (P)",
+                stopBtn: "রেকর্ডিং বন্ধ করুন (Enter)",
+                setupSection: "রেকর্ডিং সেটআপ",
+                topicLabel: "বক্তৃতার বিষয়",
+                topicPlaceholder: "আপনি কী নিয়ে কথা বলবেন?",
+                typeLabel: "বক্তৃতার ধরন",
+                typePlaceholder: "যেমন: সাক্ষাৎকার, উপস্থাপনা, বিতর্ক",
+                repeatLabel: "এটি একই বিষয়ে দ্বিতীয় প্রচেষ্টা",
+                startBtn: "রেকর্ডিং শুরু করুন (T)",
+                cancelBtn: "বাতিল করুন (B)",
+                recordingText: "রেকর্ডিং চলছে",
+                recordingSubtext: "মাইক্রোফোনে স্পষ্টভাবে কথা বলুন। শেষ হলে স্টপ ক্লিক করুন বা বাতিল করতে ক্যান্সেল করুন।",
+                cancelActiveBtn: "বাতিল করুন (X)",
+                recordingsSection: "আপনার রেকর্ডিং",
+                feedbackSection: "এআই প্রতিক্রিয়া ও বিশ্লেষণ",
+                transcriptionSection: "বক্তৃতা প্রতিলিপি",
+                playbackSection: "রেকর্ডিং প্লেব্যাক",
+                noRecordings: "কোন রেকর্ডিং পাওয়া যায়নি",
+                noRecordingsSubtext: "শুরু করতে আপনার প্রথম রেকর্ডিং তৈরি করুন!",
+                playRecBtn: "চালান",
+                deleteBtn: "মুছুন",
+                recordingTooShort: "রেকর্ডিং খুব ছোট",
+                recordingTooShortText: "দুঃখিত! রেকর্ডিংটি প্রতিক্রিয়া তৈরি করার জন্য খুবই ছোট ছিল। দয়া করে আরও দীর্ঘ বক্তৃতা দিয়ে আবার চেষ্টা করুন।"
+            },
+            'zh-CN': {
+                title: "AI语音评估器",
+                subtitle: "用尖端的AI驱动反馈和分析改变您的演讲技能",
+                sessionText: "您的会话：",
+                languageLabel: "选择您的目标语言：",
+                languageSection: "语言选择",
+                actionsSection: "快速操作",
+                recordBtn: "录制演讲 (R)",
+                viewBtn: "查看录音 (L)",
+                playBtn: "播放录音 (P)",
+                stopBtn: "停止录制 (Enter)",
+                setupSection: "录制设置",
+                topicLabel: "演讲主题",
+                topicPlaceholder: "您将谈论什么？",
+                typeLabel: "演讲类型",
+                typePlaceholder: "例如：面试、演示、辩论",
+                repeatLabel: "这是同一主题的重复尝试",
+                startBtn: "开始录制 (T)",
+                cancelBtn: "取消 (B)",
+                recordingText: "录制进行中",
+                recordingSubtext: "清楚地对着麦克风说话。完成时点击停止或点击取消放弃。",
+                cancelActiveBtn: "取消 (X)",
+                recordingsSection: "您的录音",
+                feedbackSection: "AI反馈与分析",
+                transcriptionSection: "演讲转录",
+                playbackSection: "录音播放",
+                noRecordings: "未找到录音",
+                noRecordingsSubtext: "创建您的第一个录音开始吧！",
+                playRecBtn: "播放",
+                deleteBtn: "删除",
+                recordingTooShort: "录音太短",
+                recordingTooShortText: "抱歉！录音太短无法生成反馈。请用更长的演讲重试。"
             }
         };
 
@@ -2215,6 +2633,8 @@ def serve_frontend():
             }
         }
 
+        // Continue with rest of the JavaScript functions...
+        
         async function confirmRecording() {
             const topic = document.getElementById('topicInput').value.trim();
             const speechType = document.getElementById('speechTypeInput').value.trim();
