@@ -218,7 +218,23 @@ def validate_configuration():
 def get_languages():
     if PRODUCTION_MODE:
         LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'tr', 'nl', 'bn']
-        LANGUAGE_DISPLAY = [f"{code}: {code.upper()}" for code in LANGUAGES]
+        LANGUAGE_DISPLAY = [
+            "en: English",
+            "es: Spanish", 
+            "fr: French",
+            "de: German",
+            "it: Italian",
+            "pt: Portuguese", 
+            "ru: Russian",
+            "ja: Japanese",
+            "ko: Korean",
+            "zh: Chinese",
+            "ar: Arabic",
+            "hi: Hindi",
+            "tr: Turkish",
+            "nl: Dutch",
+            "bn: Bengali"
+        ]
     else:
         from config import LANGUAGES, LANGUAGE_DISPLAY
     
@@ -1348,22 +1364,22 @@ def serve_frontend():
                 <label for="languageSelect" style="color: white; font-weight: 600;">Choose your target language:</label>
                 <div class="select-wrapper">
                     <select id="languageSelect">
-                        <option value="en">English</option>
-                        <option value="ko">Korean</option>
-                        <option value="zh-CN">Chinese (Simplified)</option>
-                        <option value="it">Italian</option>
-                        <option value="ja">Japanese</option>
-                        <option value="pt">Portuguese</option>
-                        <option value="ru">Russian</option>
-                        <option value="ar">Arabic</option>
-                        <option value="hi">Hindi</option>
-                        <option value="tr">Turkish</option>
-                        <option value="nl">Dutch</option>
-                        <option value="fr">French</option>
-                        <option value="es">Spanish</option>
-                        <option value="de">German</option>
-                        <option value="bn">Bengali</option>
-                        <option value="zh">Mandarin Chinese</option>
+                        <option value="en">en: English</option>
+                        <option value="ko">ko: Korean</option>
+                        <option value="zh-CN">zh-CN: Chinese (Simplified)</option>
+                        <option value="it">it: Italian</option>
+                        <option value="ja">ja: Japanese</option>
+                        <option value="pt">pt: Portuguese</option>
+                        <option value="ru">ru: Russian</option>
+                        <option value="ar">ar: Arabic</option>
+                        <option value="hi">hi: Hindi</option>
+                        <option value="tr">tr: Turkish</option>
+                        <option value="nl">nl: Dutch</option>
+                        <option value="fr">fr: French</option>
+                        <option value="es">es: Spanish</option>
+                        <option value="de">de: German</option>
+                        <option value="bn">bn: Bengali</option>
+                        <option value="zh">zh: Mandarin Chinese</option>
                     </select>
                 </div>
             </div>
@@ -1596,6 +1612,207 @@ def serve_frontend():
             }
         }
 
+        const translations = {
+            en: {
+                title: "AI Speech Evaluator",
+                subtitle: "Transform your speaking skills with cutting-edge AI-powered feedback and analysis",
+                sessionText: "Your Session:",
+                languageLabel: "Choose your target language:",
+                languageSection: "Language Selection",
+                actionsSection: "Quick Actions",
+                recordBtn: "Record Speech (R)",
+                viewBtn: "View Recordings (L)",
+                playBtn: "Play Recording (P)",
+                stopBtn: "Stop Recording (Enter)",
+                setupSection: "Recording Setup",
+                topicLabel: "Speech Topic",
+                topicPlaceholder: "What will you be speaking about?",
+                typeLabel: "Speech Type",
+                typePlaceholder: "e.g., interview, presentation, debate",
+                repeatLabel: "This is a repeat attempt on the same topic",
+                startBtn: "Start Recording (T)",
+                cancelBtn: "Cancel (B)",
+                recordingText: "Recording in Progress",
+                recordingSubtext: "Speak clearly into your microphone. Click stop when finished or cancel to discard.",
+                cancelActiveBtn: "Cancel (X)",
+                recordingsSection: "Your Recordings",
+                feedbackSection: "AI Feedback & Analysis",
+                transcriptionSection: "Speech Transcription",
+                playbackSection: "Recording Playback",
+                noRecordings: "No recordings found",
+                noRecordingsSubtext: "Create your first recording to get started!",
+                playRecBtn: "Play",
+                deleteBtn: "Delete",
+                recordingTooShort: "Recording Too Short",
+                recordingTooShortText: "Sorry! The recording was too short to generate feedback for. Please try again with a longer speech."
+            },
+            es: {
+                title: "Evaluador de Discursos IA",
+                subtitle: "Transforma tus habilidades de habla con análisis y retroalimentación impulsados por IA de vanguardia",
+                sessionText: "Tu Sesión:",
+                languageLabel: "Elige tu idioma objetivo:",
+                languageSection: "Selección de Idioma",
+                actionsSection: "Acciones Rápidas",
+                recordBtn: "Grabar Discurso (R)",
+                viewBtn: "Ver Grabaciones (L)",
+                playBtn: "Reproducir Grabación (P)",
+                stopBtn: "Detener Grabación (Enter)",
+                setupSection: "Configuración de Grabación",
+                topicLabel: "Tema del Discurso",
+                topicPlaceholder: "¿De qué vas a hablar?",
+                typeLabel: "Tipo de Discurso",
+                typePlaceholder: "ej., entrevista, presentación, debate",
+                repeatLabel: "Este es un segundo intento del mismo tema",
+                startBtn: "Iniciar Grabación (T)",
+                cancelBtn: "Cancelar (B)",
+                recordingText: "Grabación en Progreso",
+                recordingSubtext: "Habla claramente al micrófono. Haz clic en detener cuando termines o cancelar para descartar.",
+                cancelActiveBtn: "Cancelar (X)",
+                recordingsSection: "Tus Grabaciones",
+                feedbackSection: "Análisis y Retroalimentación IA",
+                transcriptionSection: "Transcripción del Discurso",
+                playbackSection: "Reproducción de Grabación",
+                noRecordings: "No se encontraron grabaciones",
+                noRecordingsSubtext: "¡Crea tu primera grabación para comenzar!",
+                playRecBtn: "Reproducir",
+                deleteBtn: "Eliminar",
+                recordingTooShort: "Grabación Muy Corta",
+                recordingTooShortText: "¡Lo siento! La grabación fue muy corta para generar retroalimentación. Por favor, inténtalo de nuevo con un discurso más largo."
+            },
+            fr: {
+                title: "Évaluateur de Discours IA",
+                subtitle: "Transformez vos compétences oratoires avec des commentaires et analyses IA de pointe",
+                sessionText: "Votre Session:",
+                languageLabel: "Choisissez votre langue cible:",
+                languageSection: "Sélection de Langue",
+                actionsSection: "Actions Rapides",
+                recordBtn: "Enregistrer Discours (R)",
+                viewBtn: "Voir Enregistrements (L)",
+                playBtn: "Lire Enregistrement (P)",
+                stopBtn: "Arrêter Enregistrement (Entrée)",
+                setupSection: "Configuration d'Enregistrement",
+                topicLabel: "Sujet du Discours",
+                topicPlaceholder: "De quoi allez-vous parler?",
+                typeLabel: "Type de Discours",
+                typePlaceholder: "ex., entretien, présentation, débat",
+                repeatLabel: "Ceci est une seconde tentative sur le même sujet",
+                startBtn: "Démarrer Enregistrement (T)",
+                cancelBtn: "Annuler (B)",
+                recordingText: "Enregistrement en Cours",
+                recordingSubtext: "Parlez clairement dans votre microphone. Cliquez arrêter quand terminé ou annuler pour ignorer.",
+                cancelActiveBtn: "Annuler (X)",
+                recordingsSection: "Vos Enregistrements",
+                feedbackSection: "Analyse et Commentaires IA",
+                transcriptionSection: "Transcription du Discours",
+                playbackSection: "Lecture d'Enregistrement",
+                noRecordings: "Aucun enregistrement trouvé",
+                noRecordingsSubtext: "Créez votre premier enregistrement pour commencer!",
+                playRecBtn: "Lire",
+                deleteBtn: "Supprimer",
+                recordingTooShort: "Enregistrement Trop Court",
+                recordingTooShortText: "Désolé! L'enregistrement était trop court pour générer des commentaires. Veuillez réessayer avec un discours plus long."
+            },
+            de: {
+                title: "KI-Sprach-Evaluator",
+                subtitle: "Verwandeln Sie Ihre Sprechfähigkeiten mit modernsten KI-gestützten Feedback und Analysen",
+                sessionText: "Ihre Sitzung:",
+                languageLabel: "Wählen Sie Ihre Zielsprache:",
+                languageSection: "Sprachauswahl",
+                actionsSection: "Schnelle Aktionen",
+                recordBtn: "Rede Aufnehmen (R)",
+                viewBtn: "Aufnahmen Anzeigen (L)",
+                playBtn: "Aufnahme Abspielen (P)",
+                stopBtn: "Aufnahme Stoppen (Enter)",
+                setupSection: "Aufnahme-Einrichtung",
+                topicLabel: "Rede-Thema",
+                topicPlaceholder: "Worüber werden Sie sprechen?",
+                typeLabel: "Rede-Typ",
+                typePlaceholder: "z.B., Interview, Präsentation, Debatte",
+                repeatLabel: "Dies ist ein zweiter Versuch zum gleichen Thema",
+                startBtn: "Aufnahme Starten (T)",
+                cancelBtn: "Abbrechen (B)",
+                recordingText: "Aufnahme läuft",
+                recordingSubtext: "Sprechen Sie deutlich in Ihr Mikrofon. Klicken Sie stoppen wenn fertig oder abbrechen zum Verwerfen.",
+                cancelActiveBtn: "Abbrechen (X)",
+                recordingsSection: "Ihre Aufnahmen",
+                feedbackSection: "KI-Feedback & Analyse",
+                transcriptionSection: "Rede-Transkription",
+                playbackSection: "Aufnahme-Wiedergabe",
+                noRecordings: "Keine Aufnahmen gefunden",
+                noRecordingsSubtext: "Erstellen Sie Ihre erste Aufnahme um zu beginnen!",
+                playRecBtn: "Abspielen",
+                deleteBtn: "Löschen",
+                recordingTooShort: "Aufnahme Zu Kurz",
+                recordingTooShortText: "Entschuldigung! Die Aufnahme war zu kurz um Feedback zu generieren. Bitte versuchen Sie es erneut mit einer längeren Rede."
+            },
+            zh: {
+                title: "AI语音评估器",
+                subtitle: "用尖端的AI驱动反馈和分析改变您的演讲技能",
+                sessionText: "您的会话：",
+                languageLabel: "选择您的目标语言：",
+                languageSection: "语言选择",
+                actionsSection: "快速操作",
+                recordBtn: "录制演讲 (R)",
+                viewBtn: "查看录音 (L)",
+                playBtn: "播放录音 (P)",
+                stopBtn: "停止录制 (Enter)",
+                setupSection: "录制设置",
+                topicLabel: "演讲主题",
+                topicPlaceholder: "您将谈论什么？",
+                typeLabel: "演讲类型",
+                typePlaceholder: "例如：面试、演示、辩论",
+                repeatLabel: "这是同一主题的重复尝试",
+                startBtn: "开始录制 (T)",
+                cancelBtn: "取消 (B)",
+                recordingText: "录制进行中",
+                recordingSubtext: "清楚地对着麦克风说话。完成时点击停止或点击取消放弃。",
+                cancelActiveBtn: "取消 (X)",
+                recordingsSection: "您的录音",
+                feedbackSection: "AI反馈与分析",
+                transcriptionSection: "演讲转录",
+                playbackSection: "录音播放",
+                noRecordings: "未找到录音",
+                noRecordingsSubtext: "创建您的第一个录音开始吧！",
+                playRecBtn: "播放",
+                deleteBtn: "删除",
+                recordingTooShort: "录音太短",
+                recordingTooShortText: "抱歉！录音太短无法生成反馈。请用更长的演讲重试。"
+            },
+            ja: {
+                title: "AIスピーチ評価器",
+                subtitle: "最先端のAI駆動フィードバックと分析でスピーキングスキルを変革",
+                sessionText: "あなたのセッション：",
+                languageLabel: "対象言語を選択：",
+                languageSection: "言語選択",
+                actionsSection: "クイックアクション",
+                recordBtn: "スピーチ録音 (R)",
+                viewBtn: "録音を表示 (L)",
+                playBtn: "録音再生 (P)",
+                stopBtn: "録音停止 (Enter)",
+                setupSection: "録音設定",
+                topicLabel: "スピーチトピック",
+                topicPlaceholder: "何について話しますか？",
+                typeLabel: "スピーチタイプ",
+                typePlaceholder: "例：面接、プレゼンテーション、討論",
+                repeatLabel: "これは同じトピックの再試行です",
+                startBtn: "録音開始 (T)",
+                cancelBtn: "キャンセル (B)",
+                recordingText: "録音中",
+                recordingSubtext: "マイクに向かってはっきりと話してください。終了時は停止をクリック、破棄する場合はキャンセルをクリック。",
+                cancelActiveBtn: "キャンセル (X)",
+                recordingsSection: "あなたの録音",
+                feedbackSection: "AIフィードバック＆分析",
+                transcriptionSection: "スピーチ転写",
+                playbackSection: "録音再生",
+                noRecordings: "録音が見つかりません",
+                noRecordingsSubtext: "最初の録音を作成して始めましょう！",
+                playRecBtn: "再生",
+                deleteBtn: "削除",
+                recordingTooShort: "録音が短すぎます",
+                recordingTooShortText: "申し訳ありません！録音が短すぎてフィードバックを生成できません。より長いスピーチで再試行してください。"
+            }
+        };
+
         document.getElementById('languageSelect').addEventListener('change', function() {
             currentLanguage = this.value;
             updateLanguage();
@@ -1603,6 +1820,64 @@ def serve_frontend():
 
         function updateLanguage() {
             console.log('Language changed to: ' + currentLanguage);
+            
+            const lang = translations[currentLanguage] || translations.en;
+            
+            // Update main content
+            document.querySelector('.header h1').textContent = lang.title;
+            document.querySelector('.header p').textContent = lang.subtitle;
+            document.querySelector('#sessionInfo').innerHTML = `<i class="fas fa-user-circle"></i> ${lang.sessionText} <span id="sessionId">${document.getElementById('sessionId').textContent}</span>`;
+            
+            // Update language selector
+            document.querySelector('label[for="languageSelect"]').textContent = lang.languageLabel;
+            document.querySelector('.language-selector').previousElementSibling.querySelector('span').textContent = lang.languageSection;
+            
+            // Update quick actions
+            document.querySelector('.controls-grid').previousElementSibling.querySelector('span').textContent = lang.actionsSection;
+            document.querySelector('#recordBtn').innerHTML = `<i class="fas fa-microphone"></i> ${lang.recordBtn}`;
+            document.querySelector('.btn-list').innerHTML = `<i class="fas fa-list"></i> ${lang.viewBtn}`;
+            document.querySelector('.btn-play').innerHTML = `<i class="fas fa-play"></i> ${lang.playBtn}`;
+            document.querySelector('#stopBtn').innerHTML = `<i class="fas fa-stop"></i> ${lang.stopBtn}`;
+            
+            // Update recording setup
+            document.querySelector('#recordingSetup .section-title span').textContent = lang.setupSection;
+            document.querySelector('label[for="topicInput"]').textContent = lang.topicLabel;
+            document.querySelector('#topicInput').placeholder = lang.topicPlaceholder;
+            document.querySelector('label[for="speechTypeInput"]').textContent = lang.typeLabel;
+            document.querySelector('#speechTypeInput').placeholder = lang.typePlaceholder;
+            document.querySelector('label[for="repeatSpeech"]').textContent = lang.repeatLabel;
+            
+            // Update recording setup buttons
+            const setupButtons = document.querySelectorAll('#recordingSetup .controls-grid .btn');
+            setupButtons[0].innerHTML = `<i class="fas fa-play"></i> ${lang.startBtn}`;
+            setupButtons[1].innerHTML = `<i class="fas fa-times"></i> ${lang.cancelBtn}`;
+            
+            // Update recording status
+            document.querySelector('.status-text').textContent = lang.recordingText;
+            document.querySelector('.status-subtext').textContent = lang.recordingSubtext;
+            
+            // Update recording status buttons
+            const statusButtons = document.querySelectorAll('#recordingStatus .btn');
+            statusButtons[0].innerHTML = `<i class="fas fa-stop"></i> ${lang.stopBtn}`;
+            statusButtons[1].innerHTML = `<i class="fas fa-times"></i> ${lang.cancelActiveBtn}`;
+            
+            // Update sections
+            document.querySelector('#recordingsList .section-title span').textContent = lang.recordingsSection;
+            document.querySelector('#feedbackSection .section-title span').textContent = lang.feedbackSection;
+            document.querySelector('#transcriptionSection .section-title span').textContent = lang.transcriptionSection;
+            document.querySelector('#audioControls .section-title span').textContent = lang.playbackSection;
+            
+            // Update "no recordings" message if visible
+            const noRecordingsElement = document.querySelector('#recordingsContainer');
+            if (noRecordingsElement && noRecordingsElement.innerHTML.includes('No recordings found')) {
+                noRecordingsElement.innerHTML = `<div class="recording-item" style="background: rgba(255,255,255,0.9);"><div class="recording-info"><h4 style="color: #2d3748;">📁 ${lang.noRecordings}</h4><div class="recording-meta" style="color: #2d3748;">${lang.noRecordingsSubtext}</div></div></div>`;
+            }
+            
+            // Update feedback content for "too short" message if visible
+            const feedbackContent = document.querySelector('#feedbackContent');
+            if (feedbackContent && feedbackContent.innerHTML.includes('Recording Too Short')) {
+                feedbackContent.innerHTML = `<div style="text-align: center; padding: 20px;"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px; color: #f9ca24;"></i><h3 style="color: #f9ca24; margin-bottom: 10px;">${lang.recordingTooShort}</h3><p style="color: #2d3748;">${lang.recordingTooShortText}</p></div>`;
+            }
         }
 
         async function apiCall(endpoint, options = {}) {
@@ -1638,6 +1913,9 @@ def serve_frontend():
         async function checkHealth() {
             try {
                 const result = await apiCall('/health');
+                if (result.success) {
+                    showStatus('✓ Connected to backend successfully (' + result.active_sessions + ' active sessions)', 'success');
+                }
             } catch (error) {
                 showStatus('❌ Cannot connect to backend. Please start the API server.', 'error');
             }
@@ -2042,6 +2320,7 @@ def serve_frontend():
         function displayResults(result) {
             const hasTranscription = result.transcription && result.transcription.trim().length > 0;
             const hasFeedback = result.feedback && result.feedback.trim().length > 0;
+            const lang = translations[currentLanguage] || translations.en;
             
             if (hasTranscription) {
                 document.getElementById('transcriptionContent').textContent = result.transcription;
@@ -2051,7 +2330,7 @@ def serve_frontend():
             if (hasFeedback) {
                 document.getElementById('feedbackContent').innerHTML = result.feedback.replace(/\\n/g, '<br>');
             } else {
-                document.getElementById('feedbackContent').innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px; color: #f9ca24;"></i><h3 style="color: #f9ca24; margin-bottom: 10px;">Recording Too Short</h3><p style="color: #2d3748;">Sorry! The recording was too short to generate feedback for. Please try again with a longer speech.</p></div>';
+                document.getElementById('feedbackContent').innerHTML = `<div style="text-align: center; padding: 20px;"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px; color: #f9ca24;"></i><h3 style="color: #f9ca24; margin-bottom: 10px;">${lang.recordingTooShort}</h3><p style="color: #2d3748;">${lang.recordingTooShortText}</p></div>`;
             }
             
             document.getElementById('feedbackSection').classList.add('active');
@@ -2093,15 +2372,16 @@ def serve_frontend():
 
         function displayRecordingsList() {
             const container = document.getElementById('recordingsContainer');
+            const lang = translations[currentLanguage] || translations.en;
     
             if (recordings.length === 0) {
-                container.innerHTML = '<div class="recording-item" style="background: rgba(255,255,255,0.9);"><div class="recording-info"><h4 style="color: #2d3748;">📁 No recordings found</h4><div class="recording-meta" style="color: #2d3748;">Create your first recording to get started!</div></div></div>';
+                container.innerHTML = `<div class="recording-item" style="background: rgba(255,255,255,0.9);"><div class="recording-info"><h4 style="color: #2d3748;">📁 ${lang.noRecordings}</h4><div class="recording-meta" style="color: #2d3748;">${lang.noRecordingsSubtext}</div></div></div>`;
                 return;
             }
 
             const recordingItems = recordings.map(function(recording) {
                 const safeFilename = recording.filename.replace(/'/g, "\\\\'");
-                return '<div class="recording-item"><div class="recording-info"><h4 style="color: #2d3748;"><i class="fas fa-file-audio"></i> ' + recording.filename + '</h4><div class="recording-meta">Size: ' + formatFileSize(recording.size) + ' | Created: ' + formatDate(recording.created) + '</div></div><div class="recording-actions"><button class="btn btn-play btn-small" onclick="playRecording(\\'' + safeFilename + '\\')"><i class="fas fa-play"></i> Play</button><button class="btn btn-stop btn-small" onclick="deleteRecording(\\'' + safeFilename + '\\')" style="background: var(--danger-gradient);"><i class="fas fa-trash"></i> Delete</button></div></div>';
+                return `<div class="recording-item"><div class="recording-info"><h4 style="color: #2d3748;"><i class="fas fa-file-audio"></i> ${recording.filename}</h4><div class="recording-meta">Size: ${formatFileSize(recording.size)} | Created: ${formatDate(recording.created)}</div></div><div class="recording-actions"><button class="btn btn-play btn-small" onclick="playRecording('${safeFilename}')"><i class="fas fa-play"></i> ${lang.playRecBtn}</button><button class="btn btn-stop btn-small" onclick="deleteRecording('${safeFilename}')" style="background: var(--danger-gradient);"><i class="fas fa-trash"></i> ${lang.deleteBtn}</button></div></div>`;
             });
 
             container.innerHTML = recordingItems.join('');
