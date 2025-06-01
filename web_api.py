@@ -770,6 +770,7 @@ def get_session_data():
             'error': str(e)
         }), 500
 
+
 @app.route('/')
 def serve_frontend():
     if PRODUCTION_MODE:
@@ -1385,7 +1386,7 @@ def serve_frontend():
             50% { opacity: 1; transform: translateX(10px); }
         }
 
-                .feedback-text {
+        .feedback-text {
             position: relative;
             z-index: 2;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -2546,13 +2547,13 @@ def serve_frontend():
             const lang = translations[currentLanguage] || translations.en;
     
             if (recordings.length === 0) {
-                container.innerHTML = `<div class="recording-item" style="background: rgba(255,255,255,0.9);"><div class="recording-info"><h4 style="color: #2d3748;">📁 ${lang.noRecordings}</h4><div class="recording-meta" style="color: #2d3748;">${lang.noRecordingsSubtext}</div></div></div>`;
+                container.innerHTML = '<div class="recording-item" style="background: rgba(255,255,255,0.9);"><div class="recording-info"><h4 style="color: #2d3748;">📁 ' + lang.noRecordings + '</h4><div class="recording-meta" style="color: #2d3748;">' + lang.noRecordingsSubtext + '</div></div></div>';
                 return;
             }
 
             const recordingItems = recordings.map(function(recording) {
                 const safeFilename = recording.filename.replace(/'/g, "\\\\'");
-                return `<div class="recording-item"><div class="recording-info"><h4 style="color: #2d3748;"><i class="fas fa-file-audio"></i> ${recording.filename}</h4><div class="recording-meta">Size: ${formatFileSize(recording.size)} | Created: ${formatDate(recording.created)}</div></div><div class="recording-actions"><button class="btn btn-play btn-small" onclick="playRecording('${safeFilename}')"><i class="fas fa-play"></i> ${lang.playRecBtn}</button><button class="btn btn-stop btn-small" onclick="deleteRecording('${safeFilename}')" style="background: var(--danger-gradient);"><i class="fas fa-trash"></i> ${lang.deleteBtn}</button></div></div>`;
+                return '<div class="recording-item"><div class="recording-info"><h4 style="color: #2d3748;"><i class="fas fa-file-audio"></i> ' + recording.filename + '</h4><div class="recording-meta">Size: ' + formatFileSize(recording.size) + ' | Created: ' + formatDate(recording.created) + '</div></div><div class="recording-actions"><button class="btn btn-play btn-small" onclick="playRecording(\'' + safeFilename + '\')"><i class="fas fa-play"></i> ' + lang.playRecBtn + '</button><button class="btn btn-stop btn-small" onclick="deleteRecording(\'' + safeFilename + '\')" style="background: var(--danger-gradient);"><i class="fas fa-trash"></i> ' + lang.deleteBtn + '</button></div></div>';
             });
 
             container.innerHTML = recordingItems.join('');
@@ -2617,7 +2618,7 @@ def serve_frontend():
 </html>
 """
     else:
-        return "API is running. Frontend at http://localhost:3000"
+        return "API is running. Frontend at http://localhost:3000" '
 
 @app.route('/api/session', methods=['DELETE'])
 def clear_session():
