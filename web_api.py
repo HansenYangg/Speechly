@@ -577,7 +577,7 @@ def stream_feedback(session_id, filename):
                         f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
                         f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
                         f"Note good things they did and things they can improve on, and don't be overly nice.\n"
-                        f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
+                        f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity, with either a new line or ---.\n" 
                         f"{language_instruction}"
                     )
                 else:
@@ -593,7 +593,7 @@ def stream_feedback(session_id, filename):
                         f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
                         f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
                         f"Note good things they did and things they can improve on, and don't be overly nice.\n"
-                        f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
+                        f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity. You MUST start each new paragraph with a new line or ---.\n" 
                         f"{language_instruction}"
                     )
                 
@@ -618,11 +618,19 @@ def stream_feedback(session_id, filename):
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     content = chunk.choices[0].delta.content
-                    # Add spacing between chunks for better readability
-                    spaced_content = content + "\n" if content.strip() else content
+                    # Detect paragraph endings and add spacing
+                    if content and (
+                        content.endswith('.\n') or 
+                        content.endswith(':\n') or 
+                        '\n\n' in content or
+                        any(marker in content for marker in ['---', '===', '###'])
+                    ):
+                        spaced_content = content + "\n"
+                    else:
+                        spaced_content = content
                     full_feedback += spaced_content
                     yield f"data: {json.dumps({'content': spaced_content, 'type': 'chunk'})}\n\n"
-            
+                                
             # Send completion message
             yield f"data: {json.dumps({'type': 'complete', 'full_feedback': full_feedback})}\n\n"
             
