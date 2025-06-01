@@ -1385,11 +1385,28 @@ def serve_frontend():
             50% { opacity: 1; transform: translateX(10px); }
         }
 
-        .feedback-content .feedback-text {
+                .feedback-text {
             position: relative;
             z-index: 2;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             font-weight: 500;
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+
+        .feedback-text p {
+            margin-bottom: 1.5em;
+        }
+
+        .feedback-text h3, .feedback-text h4 {
+            margin: 2em 0 1em 0;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .feedback-text strong {
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.95);
         }
 
         .feedback-streaming {
@@ -2436,11 +2453,21 @@ def serve_frontend():
                             document.getElementById('feedbackText').style.display = 'block';
                         }
                         
+                        // Process content for proper formatting
+                        let content = data.content;
+                        
+                        // Convert double newlines to paragraph breaks
+                        content = content.replace(/\n\n/g, '</p><p>');
+                        // Convert single newlines to line breaks
+                        content = content.replace(/\n/g, '<br>');
+                        // Convert markdown-style headers
+                        content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        
                         // Append the new content with streaming animation
                         const feedbackText = document.getElementById('feedbackText');
                         const newSpan = document.createElement('span');
                         newSpan.className = 'feedback-streaming';
-                        newSpan.textContent = data.content;
+                        newSpan.innerHTML = content;
                         feedbackText.appendChild(newSpan);
                         
                         // Scroll to bottom to follow the text
@@ -2451,6 +2478,23 @@ def serve_frontend():
                         console.log('Feedback streaming completed');
                         feedbackEventSource.close();
                         feedbackEventSource = null;
+                        
+                        // Format the complete feedback properly
+                        const feedbackText = document.getElementById('feedbackText');
+                        let fullContent = feedbackText.textContent || feedbackText.innerText;
+                        
+                        // Clean up and format the final content
+                        fullContent = fullContent
+                            .replace(/\n\n+/g, '</p><p>')  // Multiple newlines to paragraphs
+                            .replace(/\n/g, '<br>')        // Single newlines to breaks
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Bold formatting
+                        
+                        // Wrap in paragraph tags if not already
+                        if (!fullContent.includes('<p>')) {
+                            fullContent = '<p>' + fullContent + '</p>';
+                        }
+                        
+                        feedbackText.innerHTML = fullContent;
                         
                         // Remove streaming classes
                         const streamingElements = document.querySelectorAll('.feedback-streaming');
