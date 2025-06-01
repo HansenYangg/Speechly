@@ -618,8 +618,10 @@ def stream_feedback(session_id, filename):
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     content = chunk.choices[0].delta.content
-                    full_feedback += content
-                    yield f"data: {json.dumps({'content': content, 'type': 'chunk'})}\n\n"
+                    # Add spacing between chunks for better readability
+                    spaced_content = content + "\n" if content.strip() else content
+                    full_feedback += spaced_content
+                    yield f"data: {json.dumps({'content': spaced_content, 'type': 'chunk'})}\n\n"
             
             # Send completion message
             yield f"data: {json.dumps({'type': 'complete', 'full_feedback': full_feedback})}\n\n"
@@ -1390,6 +1392,7 @@ def serve_frontend():
             z-index: 2;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             font-weight: 500;
+            white-space: pre-wrap;
         }
 
         .feedback-streaming {
