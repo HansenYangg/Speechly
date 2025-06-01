@@ -618,22 +618,15 @@ def stream_feedback(session_id, filename):
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     content = chunk.choices[0].delta.content
-                    # Detect paragraph endings and add spacing
-                    if content and (
-                        content.endswith('.\n') or 
-                        content.endswith(':\n') or 
-                        '\n\n' in content or
-                        any(marker in content for marker in ['---', '===', '###'])
-                    ):
+                    # Add spacing only when detecting --- separators
+                    if content and '---' in content:
                         spaced_content = content + "\n"
                     else:
                         spaced_content = content
                     full_feedback += spaced_content
                     yield f"data: {json.dumps({'content': spaced_content, 'type': 'chunk'})}\n\n"
-                                
-            # Send completion message
-            yield f"data: {json.dumps({'type': 'complete', 'full_feedback': full_feedback})}\n\n"
-            
+                                            
+                       
             # Update the recording with the complete feedback
             for rec in user_sessions.get(session_id, []):
                 if rec['filename'] == filename:
