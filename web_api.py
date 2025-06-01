@@ -2,7 +2,7 @@ import os
 import json
 import tempfile
 import uuid
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import base64
@@ -481,77 +481,7 @@ def process_recording():
                         'error': 'Speech was too short to generate feedback for (<5 seconds). Please try again.'
                     }), 400
                 
-                def build_feedback_prompt(topic, speech_type, transcription_text, duration, language, is_repeat, previous_transcription=None):
-                    grading_instruction = (
-                        "First, give a grading on a strict scale of 1-100 on the speech. "
-                        "Don't always have scores in increments of 5, use more varied/granular scores. "
-                        "You can choose to give separate scores for certain things, like 18/20 for structure, 17.5/20 for conclusion, etc.\n "
-                        "Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n"
-                    )
-                    
-                    feedback_instruction = (
-                        "Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc. "
-                        "Note good things they did and things they can improve on, and don't be overly nice. "
-                    )
-                    
-                    
-                    repeat_context = ""
-                    if is_repeat and previous_transcription:
-                        repeat_context = f"Also, the user has already done a speech on this topic. Here is the original transcription: {previous_transcription}. Compare the two and note improvements."
-                    
-                    language_instruction = f"Try to tailor the feedback based off the context of the user presentation. Make sure to do this in {language}."
-                    
-                    if MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
-                        prompt = (
-                            f"The following speech is pretty short and may lack sufficient content. "
-                            f"Please evaluate and critique it given the following topic and type of the speech. "
-                            f"Give appropriate feedback accordingly based on these:\n\n"
-                            f"Speech topic: '{topic}'\n"
-                            f"Speech type: {speech_type}\n"
-                            f"Transcription: '{transcription_text}'\n\n"
-                            f"{repeat_context}\n"
-                            f"Please grade out of a total 100 points and give constructive feedback without being overly nice. "
-                            f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
-                            f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
-                            f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
-                            f"Note good things they did and things they can improve on, and don't be overly nice.\n"
-                            f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
-                            f"{language_instruction}"
-                        )
-                    else:
-                        prompt = (
-                            f"Please evaluate and critique it given the following topic and type of the speech. "
-                            f"Give appropriate feedback accordingly based on this information about the presentation:\n\n"
-                            f"Speech topic: '{topic}'\n"
-                            f"Speech type: {speech_type}\n"
-                            f"Transcription: '{transcription_text}'\n\n"
-                            f"{repeat_context}\n"
-                            f"Please grade out of a total 100 points and give constructive feedback without being overly nice. "
-                            f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
-                            f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
-                            f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
-                            f"Note good things they did and things they can improve on, and don't be overly nice.\n"
-                            f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
-                            f"{language_instruction}"
-                        )
-                    
-                    return prompt
-                
-                feedback_prompt = build_feedback_prompt(
-                    topic, speech_type, transcription_text, duration, language, is_repeat
-                )
-                
-                feedback_response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "user", "content": feedback_prompt}
-                    ],
-                    max_tokens=1500,
-                    temperature=0.5
-                )
-                
-                feedback = feedback_response.choices[0].message.content
-                
+                # Create the streaming response first
                 filename = generate_session_filename(session_id, topic)
                 if not filename:
                     return jsonify({
@@ -559,6 +489,7 @@ def process_recording():
                         'error': 'Failed to generate filename'
                     }), 500
                 
+                # Save basic recording info (we'll update with feedback later)
                 save_session_recording(
                     session_id=session_id,
                     filename=filename,
@@ -566,19 +497,20 @@ def process_recording():
                     topic=topic,
                     speech_type=speech_type,
                     transcription=transcription_text,
-                    feedback=feedback
+                    feedback=""  # Will be updated later
                 )
 
+                # Return initial success response with transcription
                 return jsonify({
                     'success': True,
                     'result': {
                         'filename': filename,
                         'transcription': transcription_text,
-                        'feedback': feedback,
                         'topic': topic,
                         'speech_type': speech_type,
                         'duration': round(duration, 1),
-                        'score_type': 'short' if duration < SHORT_RECORDING_THRESHOLD else 'full'
+                        'score_type': 'short' if duration < SHORT_RECORDING_THRESHOLD else 'full',
+                        'stream_url': f'/api/stream-feedback/{session_id}/{filename}'
                     }
                 })
             
@@ -592,6 +524,116 @@ def process_recording():
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/api/stream-feedback/<session_id>/<filename>')
+def stream_feedback(session_id, filename):
+    """Stream feedback generation in real-time"""
+    
+    def generate_feedback():
+        try:
+            # Get the recording data
+            recording = get_session_recording_data(session_id, filename)
+            if not recording:
+                yield f"data: {json.dumps({'error': 'Recording not found'})}\n\n"
+                return
+            
+            topic = recording['topic']
+            speech_type = recording['speech_type']
+            transcription_text = recording['transcription']
+            
+            # Calculate duration
+            duration = len(recording['audio_data']) / (44100 * 2)
+            
+            def build_feedback_prompt(topic, speech_type, transcription_text, duration, language, is_repeat, previous_transcription=None):
+                grading_instruction = (
+                    "First, give a grading on a strict scale of 1-100 on the speech. "
+                    "Don't always have scores in increments of 5, use more varied/granular scores. "
+                    "You can choose to give separate scores for certain things, like 18/20 for structure, 17.5/20 for conclusion, etc.\n "
+                    "Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n"
+                )
+                
+                feedback_instruction = (
+                    "Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc. "
+                    "Note good things they did and things they can improve on, and don't be overly nice. "
+                )
+                
+                repeat_context = ""
+                language_instruction = f"Try to tailor the feedback based off the context of the user presentation. Make sure to do this in English."
+                
+                MIN_RECORDING_DURATION = 5
+                SHORT_RECORDING_THRESHOLD = 30
+                
+                if MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
+                    prompt = (
+                        f"The following speech is pretty short and may lack sufficient content. "
+                        f"Please evaluate and critique it given the following topic and type of the speech. "
+                        f"Give appropriate feedback accordingly based on these:\n\n"
+                        f"Speech topic: '{topic}'\n"
+                        f"Speech type: {speech_type}\n"
+                        f"Transcription: '{transcription_text}'\n\n"
+                        f"{repeat_context}\n"
+                        f"Please grade out of a total 100 points and give constructive feedback without being overly nice. "
+                        f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
+                        f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
+                        f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
+                        f"Note good things they did and things they can improve on, and don't be overly nice.\n"
+                        f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
+                        f"{language_instruction}"
+                    )
+                else:
+                    prompt = (
+                        f"Please evaluate and critique it given the following topic and type of the speech. "
+                        f"Give appropriate feedback accordingly based on this information about the presentation:\n\n"
+                        f"Speech topic: '{topic}'\n"
+                        f"Speech type: {speech_type}\n"
+                        f"Transcription: '{transcription_text}'\n\n"
+                        f"{repeat_context}\n"
+                        f"Please grade out of a total 100 points and give constructive feedback without being overly nice. "
+                        f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
+                        f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
+                        f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
+                        f"Note good things they did and things they can improve on, and don't be overly nice.\n"
+                        f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity.\n" 
+                        f"{language_instruction}"
+                    )
+                
+                return prompt
+            
+            feedback_prompt = build_feedback_prompt(
+                topic, speech_type, transcription_text, duration, 'en', False
+            )
+            
+            # Stream the response from OpenAI
+            stream = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "user", "content": feedback_prompt}
+                ],
+                max_tokens=1500,
+                temperature=0.5,
+                stream=True
+            )
+            
+            full_feedback = ""
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    full_feedback += content
+                    yield f"data: {json.dumps({'content': content, 'type': 'chunk'})}\n\n"
+            
+            # Send completion message
+            yield f"data: {json.dumps({'type': 'complete', 'full_feedback': full_feedback})}\n\n"
+            
+            # Update the recording with the complete feedback
+            for rec in user_sessions.get(session_id, []):
+                if rec['filename'] == filename:
+                    rec['feedback'] = full_feedback
+                    break
+                    
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    
+    return Response(generate_feedback(), mimetype='text/event-stream')
 
 @app.route('/api/transcribe', methods=['POST'])
 def transcribe_recording():
@@ -747,6 +789,7 @@ def serve_frontend():
             --warning-gradient: linear-gradient(135deg, #f9ca24 0%, #f0932b 100%);
             --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
             --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #4a6741 100%);
+            --feedback-gradient: linear-gradient(135deg, rgba(147, 112, 219, 0.95) 0%, rgba(123, 104, 238, 0.95) 50%, rgba(138, 43, 226, 0.95) 100%);
             --glass-bg: rgba(255, 255, 255, 0.1);
             --glass-border: rgba(255, 255, 255, 0.2);
             --text-primary: #2d3748;
@@ -1267,6 +1310,7 @@ def serve_frontend():
             min-height: 44px;
         }
 
+        /* ENHANCED FEEDBACK SECTION STYLES */
         .feedback-section {
             display: none;
             margin-top: 40px;
@@ -1278,14 +1322,116 @@ def serve_frontend():
         }
 
         .feedback-content {
-            background: rgba(255,255,255,0.9);
-            border-left: 4px solid #4facfe;
-            padding: 30px;
-            border-radius: 16px;
-            margin-top: 20px;
-            backdrop-filter: blur(10px);
-            color: #2d3748;
-            line-height: 1.6;
+            background: var(--feedback-gradient);
+            backdrop-filter: blur(25px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            padding: 35px;
+            margin-top: 25px;
+            color: white;
+            line-height: 1.8;
+            font-size: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 25px 50px rgba(123, 104, 238, 0.4),
+                inset 0 2px 0 rgba(255, 255, 255, 0.4),
+                0 0 60px rgba(147, 112, 219, 0.3);
+            animation: feedbackGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes feedbackGlow {
+            0% { box-shadow: 0 25px 50px rgba(123, 104, 238, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 0 60px rgba(147, 112, 219, 0.3); }
+            100% { box-shadow: 0 30px 60px rgba(123, 104, 238, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.5), 0 0 80px rgba(147, 112, 219, 0.5); }
+        }
+
+        .feedback-content::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 30%),
+                radial-gradient(circle at 40% 70%, rgba(147, 112, 219, 0.1) 0%, transparent 40%);
+            animation: bubbleFloat 15s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes bubbleFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        .feedback-content::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.03) 50%, transparent 70%),
+                radial-gradient(circle at 60% 30%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            animation: shimmer 8s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.5; transform: translateX(-10px); }
+            50% { opacity: 1; transform: translateX(10px); }
+        }
+
+        .feedback-content .feedback-text {
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            font-weight: 500;
+        }
+
+        .feedback-streaming {
+            opacity: 0;
+            animation: fadeInText 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeInText {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-loading {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .feedback-loading .loading-dots {
+            display: flex;
+            gap: 5px;
+        }
+
+        .feedback-loading .loading-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            animation: loadingDots 1.5s ease-in-out infinite;
+        }
+
+        .feedback-loading .loading-dots span:nth-child(1) { animation-delay: 0s; }
+        .feedback-loading .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .feedback-loading .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes loadingDots {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1.2); opacity: 1; }
         }
 
         .transcription-section {
@@ -1410,6 +1556,11 @@ def serve_frontend():
                 flex-direction: column;
                 gap: 20px;
                 text-align: center;
+            }
+            
+            .feedback-content {
+                padding: 25px;
+                font-size: 15px;
             }
         }
     </style>
@@ -1568,6 +1719,16 @@ def serve_frontend():
                     <span>AI Feedback & Analysis</span>
                 </div>
                 <div class="feedback-content" id="feedbackContent">
+                    <div class="feedback-loading" id="feedbackLoading">
+                        <i class="fas fa-robot" style="font-size: 1.5rem;"></i>
+                        <span>AI is analyzing your speech</span>
+                        <div class="loading-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <div class="feedback-text" id="feedbackText" style="display: none;"></div>
                 </div>
             </div>
 
@@ -1604,6 +1765,7 @@ def serve_frontend():
         let recordedBlob = null;
         let recordings = [];
         let sessionId = null;
+        let feedbackEventSource = null;
 
         const API_BASE = 'https://speakeasyy.onrender.com/api';
 
@@ -1653,12 +1815,18 @@ def serve_frontend():
                     clearAllRecordings();
                     cleanupSession();
                 }
+                if (feedbackEventSource) {
+                    feedbackEventSource.close();
+                }
             });
             
             window.addEventListener('unload', function(e) {
                 if (sessionId) {
                     clearAllRecordings();
                     cleanupSession();
+                }
+                if (feedbackEventSource) {
+                    feedbackEventSource.close();
                 }
             });
         }
@@ -1728,488 +1896,7 @@ def serve_frontend():
                 deleteBtn: "Delete",
                 recordingTooShort: "Recording Too Short",
                 recordingTooShortText: "Sorry! The recording was too short to generate feedback for. Please try again with a longer speech."
-            },
-            es: {
-                title: "Evaluador de Discursos IA",
-                subtitle: "Transforma tus habilidades de habla con análisis y retroalimentación impulsados por IA de vanguardia",
-                sessionText: "Tu Sesión:",
-                languageLabel: "Elige tu idioma objetivo:",
-                languageSection: "Selección de Idioma",
-                actionsSection: "Acciones Rápidas",
-                recordBtn: "Grabar Discurso (R)",
-                viewBtn: "Ver Grabaciones (L)",
-                playBtn: "Reproducir Grabación (P)",
-                stopBtn: "Detener Grabación (Enter)",
-                setupSection: "Configuración de Grabación",
-                topicLabel: "Tema del Discurso",
-                topicPlaceholder: "¿De qué vas a hablar?",
-                typeLabel: "Tipo de Discurso",
-                typePlaceholder: "ej., entrevista, presentación, debate",
-                repeatLabel: "Este es un segundo intento del mismo tema",
-                startBtn: "Iniciar Grabación (T)",
-                cancelBtn: "Cancelar (B)",
-                recordingText: "Grabación en Progreso",
-                recordingSubtext: "Habla claramente al micrófono. Haz clic en detener cuando termines o cancelar para descartar.",
-                cancelActiveBtn: "Cancelar (X)",
-                recordingsSection: "Tus Grabaciones",
-                feedbackSection: "Análisis y Retroalimentación IA",
-                transcriptionSection: "Transcripción del Discurso",
-                playbackSection: "Reproducción de Grabación",
-                noRecordings: "No se encontraron grabaciones",
-                noRecordingsSubtext: "¡Crea tu primera grabación para comenzar!",
-                playRecBtn: "Reproducir",
-                deleteBtn: "Eliminar",
-                recordingTooShort: "Grabación Muy Corta",
-                recordingTooShortText: "¡Lo siento! La grabación fue muy corta para generar retroalimentación. Por favor, inténtalo de nuevo con un discurso más largo."
-            },
-            fr: {
-                title: "Évaluateur de Discours IA",
-                subtitle: "Transformez vos compétences oratoires avec des commentaires et analyses IA de pointe",
-                sessionText: "Votre Session:",
-                languageLabel: "Choisissez votre langue cible:",
-                languageSection: "Sélection de Langue",
-                actionsSection: "Actions Rapides",
-                recordBtn: "Enregistrer Discours (R)",
-                viewBtn: "Voir Enregistrements (L)",
-                playBtn: "Lire Enregistrement (P)",
-                stopBtn: "Arrêter Enregistrement (Entrée)",
-                setupSection: "Configuration d'Enregistrement",
-                topicLabel: "Sujet du Discours",
-                topicPlaceholder: "De quoi allez-vous parler?",
-                typeLabel: "Type de Discours",
-                typePlaceholder: "ex., entretien, présentation, débat",
-                repeatLabel: "Ceci est une seconde tentative sur le même sujet",
-                startBtn: "Démarrer Enregistrement (T)",
-                cancelBtn: "Annuler (B)",
-                recordingText: "Enregistrement en Cours",
-                recordingSubtext: "Parlez clairement dans votre microphone. Cliquez arrêter quand terminé ou annuler pour ignorer.",
-                cancelActiveBtn: "Annuler (X)",
-                recordingsSection: "Vos Enregistrements",
-                feedbackSection: "Analyse et Commentaires IA",
-                transcriptionSection: "Transcription du Discours",
-                playbackSection: "Lecture d'Enregistrement",
-                noRecordings: "Aucun enregistrement trouvé",
-                noRecordingsSubtext: "Créez votre premier enregistrement pour commencer!",
-                playRecBtn: "Lire",
-                deleteBtn: "Supprimer",
-                recordingTooShort: "Enregistrement Trop Court",
-                recordingTooShortText: "Désolé! L'enregistrement était trop court pour générer des commentaires. Veuillez réessayer avec un discours plus long."
-            },
-            de: {
-                title: "KI-Sprach-Evaluator",
-                subtitle: "Verwandeln Sie Ihre Sprechfähigkeiten mit modernsten KI-gestützten Feedback und Analysen",
-                sessionText: "Ihre Sitzung:",
-                languageLabel: "Wählen Sie Ihre Zielsprache:",
-                languageSection: "Sprachauswahl",
-                actionsSection: "Schnelle Aktionen",
-                recordBtn: "Rede Aufnehmen (R)",
-                viewBtn: "Aufnahmen Anzeigen (L)",
-                playBtn: "Aufnahme Abspielen (P)",
-                stopBtn: "Aufnahme Stoppen (Enter)",
-                setupSection: "Aufnahme-Einrichtung",
-                topicLabel: "Rede-Thema",
-                topicPlaceholder: "Worüber werden Sie sprechen?",
-                typeLabel: "Rede-Typ",
-                typePlaceholder: "z.B., Interview, Präsentation, Debatte",
-                repeatLabel: "Dies ist ein zweiter Versuch zum gleichen Thema",
-                startBtn: "Aufnahme Starten (T)",
-                cancelBtn: "Abbrechen (B)",
-                recordingText: "Aufnahme läuft",
-                recordingSubtext: "Sprechen Sie deutlich in Ihr Mikrofon. Klicken Sie stoppen wenn fertig oder abbrechen zum Verwerfen.",
-                cancelActiveBtn: "Abbrechen (X)",
-                recordingsSection: "Ihre Aufnahmen",
-                feedbackSection: "KI-Feedback & Analyse",
-                transcriptionSection: "Rede-Transkription",
-                playbackSection: "Aufnahme-Wiedergabe",
-                noRecordings: "Keine Aufnahmen gefunden",
-                noRecordingsSubtext: "Erstellen Sie Ihre erste Aufnahme um zu beginnen!",
-                playRecBtn: "Abspielen",
-                deleteBtn: "Löschen",
-                recordingTooShort: "Aufnahme Zu Kurz",
-                recordingTooShortText: "Entschuldigung! Die Aufnahme war zu kurz um Feedback zu generieren. Bitte versuchen Sie es erneut mit einer längeren Rede."
-            },
-            zh: {
-                title: "AI语音评估器",
-                subtitle: "用尖端的AI驱动反馈和分析改变您的演讲技能",
-                sessionText: "您的会话：",
-                languageLabel: "选择您的目标语言：",
-                languageSection: "语言选择",
-                actionsSection: "快速操作",
-                recordBtn: "录制演讲 (R)",
-                viewBtn: "查看录音 (L)",
-                playBtn: "播放录音 (P)",
-                stopBtn: "停止录制 (Enter)",
-                setupSection: "录制设置",
-                topicLabel: "演讲主题",
-                topicPlaceholder: "您将谈论什么？",
-                typeLabel: "演讲类型",
-                typePlaceholder: "例如：面试、演示、辩论",
-                repeatLabel: "这是同一主题的重复尝试",
-                startBtn: "开始录制 (T)",
-                cancelBtn: "取消 (B)",
-                recordingText: "录制进行中",
-                recordingSubtext: "清楚地对着麦克风说话。完成时点击停止或点击取消放弃。",
-                cancelActiveBtn: "取消 (X)",
-                recordingsSection: "您的录音",
-                feedbackSection: "AI反馈与分析",
-                transcriptionSection: "演讲转录",
-                playbackSection: "录音播放",
-                noRecordings: "未找到录音",
-                noRecordingsSubtext: "创建您的第一个录音开始吧！",
-                playRecBtn: "播放",
-                deleteBtn: "删除",
-                recordingTooShort: "录音太短",
-                recordingTooShortText: "抱歉！录音太短无法生成反馈。请用更长的演讲重试。"
-            },
-            ja: {
-                title: "AIスピーチ評価器",
-                subtitle: "最先端のAI駆動フィードバックと分析でスピーキングスキルを変革",
-                sessionText: "あなたのセッション：",
-                languageLabel: "対象言語を選択：",
-                languageSection: "言語選択",
-                actionsSection: "クイックアクション",
-                recordBtn: "スピーチ録音 (R)",
-                viewBtn: "録音を表示 (L)",
-                playBtn: "録音再生 (P)",
-                stopBtn: "録音停止 (Enter)",
-                setupSection: "録音設定",
-                topicLabel: "スピーチトピック",
-                topicPlaceholder: "何について話しますか？",
-                typeLabel: "スピーチタイプ",
-                typePlaceholder: "例：面接、プレゼンテーション、討論",
-                repeatLabel: "これは同じトピックの再試行です",
-                startBtn: "録音開始 (T)",
-                cancelBtn: "キャンセル (B)",
-                recordingText: "録音中",
-                recordingSubtext: "マイクに向かってはっきりと話してください。終了時は停止をクリック、破棄する場合はキャンセルをクリック。",
-                cancelActiveBtn: "キャンセル (X)",
-                recordingsSection: "あなたの録音",
-                feedbackSection: "AIフィードバック＆分析",
-                transcriptionSection: "スピーチ転写",
-                playbackSection: "録音再生",
-                noRecordings: "録音が見つかりません",
-                noRecordingsSubtext: "最初の録音を作成して始めましょう！",
-                playRecBtn: "再生",
-                deleteBtn: "削除",
-                recordingTooShort: "録音が短すぎます",
-                recordingTooShortText: "申し訳ありません！録音が短すぎてフィードバックを生成できません。より長いスピーチで再試行してください。"
-            },
-            // Add these language objects to the existing translations object in the code
-
-// Italian
-it: {
-    title: "Valutatore di Discorsi IA",
-    subtitle: "Trasforma le tue abilità oratorie con feedback e analisi all'avanguardia basati sull'IA",
-    sessionText: "La Tua Sessione:",
-    languageLabel: "Scegli la tua lingua di destinazione:",
-    languageSection: "Selezione Lingua",
-    actionsSection: "Azioni Rapide",
-    recordBtn: "Registra Discorso (R)",
-    viewBtn: "Visualizza Registrazioni (L)",
-    playBtn: "Riproduci Registrazione (P)",
-    stopBtn: "Ferma Registrazione (Invio)",
-    setupSection: "Configurazione Registrazione",
-    topicLabel: "Argomento del Discorso",
-    topicPlaceholder: "Di cosa parlerai?",
-    typeLabel: "Tipo di Discorso",
-    typePlaceholder: "es., intervista, presentazione, dibattito",
-    repeatLabel: "Questo è un secondo tentativo sullo stesso argomento",
-    startBtn: "Inizia Registrazione (T)",
-    cancelBtn: "Annulla (B)",
-    recordingText: "Registrazione in Corso",
-    recordingSubtext: "Parla chiaramente nel microfono. Clicca ferma quando hai finito o annulla per scartare.",
-    cancelActiveBtn: "Annulla (X)",
-    recordingsSection: "Le Tue Registrazioni",
-    feedbackSection: "Feedback e Analisi IA",
-    transcriptionSection: "Trascrizione del Discorso",
-    playbackSection: "Riproduzione Registrazione",
-    noRecordings: "Nessuna registrazione trovata",
-    noRecordingsSubtext: "Crea la tua prima registrazione per iniziare!",
-    playRecBtn: "Riproduci",
-    deleteBtn: "Elimina",
-    recordingTooShort: "Registrazione Troppo Breve",
-    recordingTooShortText: "Spiacente! La registrazione era troppo breve per generare feedback. Riprova con un discorso più lungo."
-},
-
-// Portuguese
-pt: {
-    title: "Avaliador de Discursos IA",
-    subtitle: "Transforme suas habilidades de fala com feedback e análise de ponta baseados em IA",
-    sessionText: "Sua Sessão:",
-    languageLabel: "Escolha seu idioma alvo:",
-    languageSection: "Seleção de Idioma",
-    actionsSection: "Ações Rápidas",
-    recordBtn: "Gravar Discurso (R)",
-    viewBtn: "Ver Gravações (L)",
-    playBtn: "Reproduzir Gravação (P)",
-    stopBtn: "Parar Gravação (Enter)",
-    setupSection: "Configuração de Gravação",
-    topicLabel: "Tópico do Discurso",
-    topicPlaceholder: "Sobre o que você vai falar?",
-    typeLabel: "Tipo de Discurso",
-    typePlaceholder: "ex., entrevista, apresentação, debate",
-    repeatLabel: "Esta é uma segunda tentativa no mesmo tópico",
-    startBtn: "Iniciar Gravação (T)",
-    cancelBtn: "Cancelar (B)",
-    recordingText: "Gravação em Progresso",
-    recordingSubtext: "Fale claramente no microfone. Clique parar quando terminar ou cancelar para descartar.",
-    cancelActiveBtn: "Cancelar (X)",
-    recordingsSection: "Suas Gravações",
-    feedbackSection: "Feedback e Análise IA",
-    transcriptionSection: "Transcrição do Discurso",
-    playbackSection: "Reprodução da Gravação",
-    noRecordings: "Nenhuma gravação encontrada",
-    noRecordingsSubtext: "Crie sua primeira gravação para começar!",
-    playRecBtn: "Reproduzir",
-    deleteBtn: "Excluir",
-    recordingTooShort: "Gravação Muito Curta",
-    recordingTooShortText: "Desculpe! A gravação foi muito curta para gerar feedback. Tente novamente com um discurso mais longo."
-},
-
-// Russian
-ru: {
-    title: "ИИ Оценщик Речи",
-    subtitle: "Преобразуйте свои навыки речи с помощью передовой обратной связи и анализа на основе ИИ",
-    sessionText: "Ваша Сессия:",
-    languageLabel: "Выберите целевой язык:",
-    languageSection: "Выбор Языка",
-    actionsSection: "Быстрые Действия",
-    recordBtn: "Записать Речь (R)",
-    viewBtn: "Просмотр Записей (L)",
-    playBtn: "Воспроизвести Запись (P)",
-    stopBtn: "Остановить Запись (Enter)",
-    setupSection: "Настройка Записи",
-    topicLabel: "Тема Речи",
-    topicPlaceholder: "О чём вы будете говорить?",
-    typeLabel: "Тип Речи",
-    typePlaceholder: "напр., интервью, презентация, дебаты",
-    repeatLabel: "Это вторая попытка на ту же тему",
-    startBtn: "Начать Запись (T)",
-    cancelBtn: "Отмена (B)",
-    recordingText: "Запись в Процессе",
-    recordingSubtext: "Говорите чётко в микрофон. Нажмите стоп когда закончите или отмена для отмены.",
-    cancelActiveBtn: "Отмена (X)",
-    recordingsSection: "Ваши Записи",
-    feedbackSection: "ИИ Обратная Связь и Анализ",
-    transcriptionSection: "Транскрипция Речи",
-    playbackSection: "Воспроизведение Записи",
-    noRecordings: "Записи не найдены",
-    noRecordingsSubtext: "Создайте первую запись для начала!",
-    playRecBtn: "Воспроизвести",
-    deleteBtn: "Удалить",
-    recordingTooShort: "Запись Слишком Короткая",
-    recordingTooShortText: "Извините! Запись была слишком короткой для генерации обратной связи. Попробуйте снова с более длинной речью."
-},
-
-// Korean
-ko: {
-    title: "AI 스피치 평가기",
-    subtitle: "최첨단 AI 기반 피드백과 분석으로 말하기 실력을 향상시키세요",
-    sessionText: "세션:",
-    languageLabel: "목표 언어를 선택하세요:",
-    languageSection: "언어 선택",
-    actionsSection: "빠른 작업",
-    recordBtn: "스피치 녹음 (R)",
-    viewBtn: "녹음 보기 (L)",
-    playBtn: "녹음 재생 (P)",
-    stopBtn: "녹음 중지 (Enter)",
-    setupSection: "녹음 설정",
-    topicLabel: "스피치 주제",
-    topicPlaceholder: "무엇에 대해 말씀하실 건가요?",
-    typeLabel: "스피치 유형",
-    typePlaceholder: "예: 면접, 발표, 토론",
-    repeatLabel: "같은 주제에 대한 재시도입니다",
-    startBtn: "녹음 시작 (T)",
-    cancelBtn: "취소 (B)",
-    recordingText: "녹음 진행 중",
-    recordingSubtext: "마이크에 대고 명확하게 말하세요. 완료되면 중지를 클릭하거나 취소를 클릭하여 삭제하세요.",
-    cancelActiveBtn: "취소 (X)",
-    recordingsSection: "녹음 목록",
-    feedbackSection: "AI 피드백 및 분석",
-    transcriptionSection: "스피치 전사",
-    playbackSection: "녹음 재생",
-    noRecordings: "녹음을 찾을 수 없습니다",
-    noRecordingsSubtext: "첫 번째 녹음을 만들어 시작하세요!",
-    playRecBtn: "재생",
-    deleteBtn: "삭제",
-    recordingTooShort: "녹음이 너무 짧습니다",
-    recordingTooShortText: "죄송합니다! 녹음이 너무 짧아서 피드백을 생성할 수 없습니다. 더 긴 스피치로 다시 시도해 주세요."
-},
-
-// Arabic
-ar: {
-    title: "مُقيم الخطابات بالذكاء الاصطناعي",
-    subtitle: "حول مهاراتك في التحدث مع تحليل وتغذية راجعة متطورة مدعومة بالذكاء الاصطناعي",
-    sessionText: "جلستك:",
-    languageLabel: "اختر لغتك المستهدفة:",
-    languageSection: "اختيار اللغة",
-    actionsSection: "إجراءات سريعة",
-    recordBtn: "تسجيل خطاب (R)",
-    viewBtn: "عرض التسجيلات (L)",
-    playBtn: "تشغيل التسجيل (P)",
-    stopBtn: "إيقاف التسجيل (Enter)",
-    setupSection: "إعداد التسجيل",
-    topicLabel: "موضوع الخطاب",
-    topicPlaceholder: "عن ماذا ستتحدث؟",
-    typeLabel: "نوع الخطاب",
-    typePlaceholder: "مثال: مقابلة، عرض تقديمي، مناقشة",
-    repeatLabel: "هذه محاولة ثانية لنفس الموضوع",
-    startBtn: "بدء التسجيل (T)",
-    cancelBtn: "إلغاء (B)",
-    recordingText: "التسجيل قيد التقدم",
-    recordingSubtext: "تحدث بوضوح في الميكروفون. انقر إيقاف عند الانتهاء أو إلغاء للتجاهل.",
-    cancelActiveBtn: "إلغاء (X)",
-    recordingsSection: "تسجيلاتك",
-    feedbackSection: "تغذية راجعة وتحليل بالذكاء الاصطناعي",
-    transcriptionSection: "نسخ الخطاب",
-    playbackSection: "تشغيل التسجيل",
-    noRecordings: "لم يتم العثور على تسجيلات",
-    noRecordingsSubtext: "أنشئ تسجيلك الأول للبدء!",
-    playRecBtn: "تشغيل",
-    deleteBtn: "حذف",
-    recordingTooShort: "التسجيل قصير جداً",
-    recordingTooShortText: "عذراً! كان التسجيل قصيراً جداً لإنتاج تغذية راجعة. حاول مرة أخرى بخطاب أطول."
-},
-
-// Hindi
-hi: {
-    title: "एआई भाषण मूल्यांकनकर्ता",
-    subtitle: "अत्याधुनिक एआई-संचालित फीडबैक और विश्लेषण के साथ अपने बोलने के कौशल को बदलें",
-    sessionText: "आपका सत्र:",
-    languageLabel: "अपनी लक्षित भाषा चुनें:",
-    languageSection: "भाषा चयन",
-    actionsSection: "त्वरित कार्य",
-    recordBtn: "भाषण रिकॉर्ड करें (R)",
-    viewBtn: "रिकॉर्डिंग देखें (L)",
-    playBtn: "रिकॉर्डिंग चलाएं (P)",
-    stopBtn: "रिकॉर्डिंग रोकें (Enter)",
-    setupSection: "रिकॉर्डिंग सेटअप",
-    topicLabel: "भाषण विषय",
-    topicPlaceholder: "आप किस बारे में बात करेंगे?",
-    typeLabel: "भाषण प्रकार",
-    typePlaceholder: "जैसे: साक्षात्कार, प्रस्तुति, बहस",
-    repeatLabel: "यह उसी विषय पर दूसरी कोशिश है",
-    startBtn: "रिकॉर्डिंग शुरू करें (T)",
-    cancelBtn: "रद्द करें (B)",
-    recordingText: "रिकॉर्डिंग प्रगति में",
-    recordingSubtext: "माइक्रोफोन में स्पष्ट रूप से बोलें। समाप्त होने पर रोकें क्लिक करें या रद्द करने के लिए रद्द करें।",
-    cancelActiveBtn: "रद्द करें (X)",
-    recordingsSection: "आपकी रिकॉर्डिंग",
-    feedbackSection: "एआई फीडबैक और विश्लेषण",
-    transcriptionSection: "भाषण प्रतिलेखन",
-    playbackSection: "रिकॉर्डिंग प्लेबैक",
-    noRecordings: "कोई रिकॉर्डिंग नहीं मिली",
-    noRecordingsSubtext: "शुरू करने के लिए अपनी पहली रिकॉर्डिंग बनाएं!",
-    playRecBtn: "चलाएं",
-    deleteBtn: "हटाएं",
-    recordingTooShort: "रिकॉर्डिंग बहुत छोटी",
-    recordingTooShortText: "माफ़ करें! रिकॉर्डिंग फीडबैक उत्पन्न करने के लिए बहुत छोटी थी। कृपया लंबे भाषण के साथ फिर से कोशिश करें।"
-},
-
-// Turkish
-tr: {
-    title: "AI Konuşma Değerlendirici",
-    subtitle: "En son AI destekli geri bildirim ve analiz ile konuşma becerilerinizi dönüştürün",
-    sessionText: "Oturumunuz:",
-    languageLabel: "Hedef dilinizi seçin:",
-    languageSection: "Dil Seçimi",
-    actionsSection: "Hızlı İşlemler",
-    recordBtn: "Konuşma Kaydet (R)",
-    viewBtn: "Kayıtları Görüntüle (L)",
-    playBtn: "Kaydı Oynat (P)",
-    stopBtn: "Kaydı Durdur (Enter)",
-    setupSection: "Kayıt Kurulumu",
-    topicLabel: "Konuşma Konusu",
-    topicPlaceholder: "Ne hakkında konuşacaksınız?",
-    typeLabel: "Konuşma Türü",
-    typePlaceholder: "örn., mülakat, sunum, tartışma",
-    repeatLabel: "Bu aynı konu üzerinde ikinci bir deneme",
-    startBtn: "Kaydı Başlat (T)",
-    cancelBtn: "İptal (B)",
-    recordingText: "Kayıt Devam Ediyor",
-    recordingSubtext: "Mikrofona açık bir şekilde konuşun. Bitirdiğinde durdur'a veya atmak için iptal'e tıklayın.",
-    cancelActiveBtn: "İptal (X)",
-    recordingsSection: "Kayıtlarınız",
-    feedbackSection: "AI Geri Bildirim ve Analiz",
-    transcriptionSection: "Konuşma Transkripsiyonu",
-    playbackSection: "Kayıt Oynatma",
-    noRecordings: "Kayıt bulunamadı",
-    noRecordingsSubtext: "Başlamak için ilk kaydınızı oluşturun!",
-    playRecBtn: "Oynat",
-    deleteBtn: "Sil",
-    recordingTooShort: "Kayıt Çok Kısa",
-    recordingTooShortText: "Üzgünüz! Kayıt geri bildirim üretmek için çok kısaydı. Lütfen daha uzun bir konuşma ile tekrar deneyin."
-},
-
-// Dutch
-nl: {
-    title: "AI Spraak Evaluator",
-    subtitle: "Transformeer je spreekvaardigheden met geavanceerde AI-aangedreven feedback en analyse",
-    sessionText: "Je Sessie:",
-    languageLabel: "Kies je doeltaal:",
-    languageSection: "Taalselectie",
-    actionsSection: "Snelle Acties",
-    recordBtn: "Spraak Opnemen (R)",
-    viewBtn: "Opnames Bekijken (L)",
-    playBtn: "Opname Afspelen (P)",
-    stopBtn: "Opname Stoppen (Enter)",
-    setupSection: "Opname Instellingen",
-    topicLabel: "Spraak Onderwerp",
-    topicPlaceholder: "Waar ga je over spreken?",
-    typeLabel: "Spraak Type",
-    typePlaceholder: "bijv., interview, presentatie, debat",
-    repeatLabel: "Dit is een tweede poging op hetzelfde onderwerp",
-    startBtn: "Opname Starten (T)",
-    cancelBtn: "Annuleren (B)",
-    recordingText: "Opname Bezig",
-    recordingSubtext: "Spreek duidelijk in je microfoon. Klik stop wanneer klaar of annuleren om te verwijderen.",
-    cancelActiveBtn: "Annuleren (X)",
-    recordingsSection: "Je Opnames",
-    feedbackSection: "AI Feedback & Analyse",
-    transcriptionSection: "Spraak Transcriptie",
-    playbackSection: "Opname Afspelen",
-    noRecordings: "Geen opnames gevonden",
-    noRecordingsSubtext: "Maak je eerste opname om te beginnen!",
-    playRecBtn: "Afspelen",
-    deleteBtn: "Verwijderen",
-    recordingTooShort: "Opname Te Kort",
-    recordingTooShortText: "Sorry! De opname was te kort om feedback te genereren. Probeer opnieuw met een langere spraak."
-},
-
-// Bengali
-bn: {
-    title: "এআই বক্তৃতা মূল্যায়নকারী",
-    subtitle: "অত্যাধুনিক এআই-চালিত ফিডব্যাক এবং বিশ্লেষণের মাধ্যমে আপনার কথা বলার দক্ষতা পরিবর্তন করুন",
-    sessionText: "আপনার সেশন:",
-    languageLabel: "আপনার লক্ষ্য ভাষা বেছে নিন:",
-    languageSection: "ভাষা নির্বাচন",
-    actionsSection: "দ্রুত কর্ম",
-    recordBtn: "বক্তৃতা রেকর্ড করুন (R)",
-    viewBtn: "রেকর্ডিং দেখুন (L)",
-    playBtn: "রেকর্ডিং চালান (P)",
-    stopBtn: "রেকর্ডিং বন্ধ করুন (Enter)",
-    setupSection: "রেকর্ডিং সেটআপ",
-    topicLabel: "বক্তৃতার বিষয়",
-    topicPlaceholder: "আপনি কি নিয়ে কথা বলবেন?",
-    typeLabel: "বক্তৃতার ধরন",
-    typePlaceholder: "যেমন: সাক্ষাৎকার, উপস্থাপনা, বিতর্ক",
-    repeatLabel: "এটি একই বিষয়ে দ্বিতীয় চেষ্টা",
-    startBtn: "রেকর্ডিং শুরু করুন (T)",
-    cancelBtn: "বাতিল (B)",
-    recordingText: "রেকর্ডিং চলছে",
-    recordingSubtext: "মাইক্রোফোনে স্পষ্ট করে কথা বলুন। শেষ হলে বন্ধ ক্লিক করুন বা বাতিল করতে বাতিল ক্লিক করুন।",
-    cancelActiveBtn: "বাতিল (X)",
-    recordingsSection: "আপনার রেকর্ডিং",
-    feedbackSection: "এআই ফিডব্যাক এবং বিশ্লেষণ",
-    transcriptionSection: "বক্তৃতার প্রতিলিপি",
-    playbackSection: "রেকর্ডিং প্লেব্যাক",
-    noRecordings: "কোন রেকর্ডিং পাওয়া যায়নি",
-    noRecordingsSubtext: "শুরু করতে আপনার প্রথম রেকর্ডিং তৈরি করুন!",
-    playRecBtn: "চালান",
-    deleteBtn: "মুছুন",
-    recordingTooShort: "রেকর্ডিং খুব ছোট",
-    recordingTooShortText: "দুঃখিত! রেকর্ডিংটি ফিডব্যাক তৈরি করার জন্য খুব ছোট ছিল। অনুগ্রহ করে আরও দীর্ঘ বক্তৃতা দিয়ে আবার চেষ্টা করুন।"
-}
+            }
         };
 
         document.getElementById('languageSelect').addEventListener('change', function() {
@@ -2265,18 +1952,6 @@ bn: {
             document.querySelector('#feedbackSection .section-title span').textContent = lang.feedbackSection;
             document.querySelector('#transcriptionSection .section-title span').textContent = lang.transcriptionSection;
             document.querySelector('#audioControls .section-title span').textContent = lang.playbackSection;
-            
-            // Update "no recordings" message if visible
-            const noRecordingsElement = document.querySelector('#recordingsContainer');
-            if (noRecordingsElement && noRecordingsElement.innerHTML.includes('No recordings found')) {
-                noRecordingsElement.innerHTML = `<div class="recording-item" style="background: rgba(255,255,255,0.9);"><div class="recording-info"><h4 style="color: #2d3748;">📁 ${lang.noRecordings}</h4><div class="recording-meta" style="color: #2d3748;">${lang.noRecordingsSubtext}</div></div></div>`;
-            }
-            
-            // Update feedback content for "too short" message if visible
-            const feedbackContent = document.querySelector('#feedbackContent');
-            if (feedbackContent && feedbackContent.innerHTML.includes('Recording Too Short')) {
-                feedbackContent.innerHTML = `<div style="text-align: center; padding: 20px;"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px; color: #f9ca24;"></i><h3 style="color: #f9ca24; margin-bottom: 10px;">${lang.recordingTooShort}</h3><p style="color: #2d3748;">${lang.recordingTooShortText}</p></div>`;
-            }
         }
 
         async function apiCall(endpoint, options = {}) {
@@ -2701,7 +2376,8 @@ bn: {
                 const result = await response.json();
 
                 if (result.success) {
-                    displayResults(result.result);
+                    displayInitialResults(result.result);
+                    startFeedbackStream(result.result.stream_url);
                     showStatus('✅ Recording processed successfully!', 'success');
                 } else {
                     showStatus('❌ Processing failed: ' + result.error, 'error');
@@ -2713,29 +2389,84 @@ bn: {
             }
         }
 
-        function displayResults(result) {
+        function displayInitialResults(result) {
             const hasTranscription = result.transcription && result.transcription.trim().length > 0;
-            const hasFeedback = result.feedback && result.feedback.trim().length > 0;
-            const lang = translations[currentLanguage] || translations.en;
             
             if (hasTranscription) {
                 document.getElementById('transcriptionContent').textContent = result.transcription;
                 document.getElementById('transcriptionSection').classList.remove('hidden');
             }
 
-            if (hasFeedback) {
-                document.getElementById('feedbackContent').innerHTML = result.feedback.replace(/\\n/g, '<br>');
-            } else {
-                document.getElementById('feedbackContent').innerHTML = `<div style="text-align: center; padding: 20px;"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px; color: #f9ca24;"></i><h3 style="color: #f9ca24; margin-bottom: 10px;">${lang.recordingTooShort}</h3><p style="color: #2d3748;">${lang.recordingTooShortText}</p></div>`;
-            }
-            
+            // Show feedback section with loading state
             document.getElementById('feedbackSection').classList.add('active');
+            document.getElementById('feedbackLoading').style.display = 'flex';
+            document.getElementById('feedbackText').style.display = 'none';
+            document.getElementById('feedbackText').innerHTML = '';
 
             if (recordedBlob) {
                 const audioURL = URL.createObjectURL(recordedBlob);
                 document.getElementById('audioPlayer').src = audioURL;
                 document.getElementById('audioControls').classList.remove('hidden');
             }
+        }
+
+        function startFeedbackStream(streamUrl) {
+            // Close any existing stream
+            if (feedbackEventSource) {
+                feedbackEventSource.close();
+            }
+
+            feedbackEventSource = new EventSource(streamUrl);
+            
+            feedbackEventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.error) {
+                        console.error('Stream error:', data.error);
+                        showStatus('❌ Feedback generation failed: ' + data.error, 'error');
+                        feedbackEventSource.close();
+                        return;
+                    }
+                    
+                    if (data.type === 'chunk' && data.content) {
+                        // Hide loading and show text on first chunk
+                        if (document.getElementById('feedbackLoading').style.display !== 'none') {
+                            document.getElementById('feedbackLoading').style.display = 'none';
+                            document.getElementById('feedbackText').style.display = 'block';
+                        }
+                        
+                        // Append the new content with streaming animation
+                        const feedbackText = document.getElementById('feedbackText');
+                        const newSpan = document.createElement('span');
+                        newSpan.className = 'feedback-streaming';
+                        newSpan.textContent = data.content;
+                        feedbackText.appendChild(newSpan);
+                        
+                        // Scroll to bottom to follow the text
+                        feedbackText.scrollTop = feedbackText.scrollHeight;
+                    }
+                    
+                    if (data.type === 'complete') {
+                        console.log('Feedback streaming completed');
+                        feedbackEventSource.close();
+                        feedbackEventSource = null;
+                        
+                        // Remove streaming classes
+                        const streamingElements = document.querySelectorAll('.feedback-streaming');
+                        streamingElements.forEach(el => el.classList.remove('feedback-streaming'));
+                    }
+                } catch (error) {
+                    console.error('Error parsing stream data:', error);
+                }
+            };
+            
+            feedbackEventSource.onerror = function(event) {
+                console.error('EventSource error:', event);
+                showStatus('❌ Lost connection to feedback stream', 'error');
+                feedbackEventSource.close();
+                feedbackEventSource = null;
+            };
         }
 
         async function listRecordings() {
