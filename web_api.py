@@ -2618,7 +2618,7 @@ def serve_frontend():
 </html>
 """
     else:
-        return "API is running. Frontend at http://localhost:3000" '
+        return "API is running. Frontend at http://localhost:3000"
 
 @app.route('/api/session', methods=['DELETE'])
 def clear_session():
