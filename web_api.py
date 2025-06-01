@@ -2466,8 +2466,6 @@ def serve_frontend():
             };
             
             feedbackEventSource.onerror = function(event) {
-                console.error('EventSource error:', event);
-                showStatus('❌ Lost connection to feedback stream', 'error');
                 feedbackEventSource.close();
                 feedbackEventSource = null;
             };
