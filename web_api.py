@@ -529,6 +529,9 @@ def process_recording():
 def stream_feedback(session_id, filename):
     """Stream feedback generation in real-time"""
     
+    # Get the language parameter BEFORE entering the generator function
+    language = request.args.get('language', 'en')
+    
     def generate_feedback():
         try:
             # Get the recording data
@@ -619,9 +622,6 @@ def stream_feedback(session_id, filename):
                     )
                 
                 return prompt
-            
-            # Get language from the request or default to 'en'
-            language = request.args.get('language', 'en')
             
             feedback_prompt = build_feedback_prompt(
                 topic, speech_type, transcription_text, duration, language, False
