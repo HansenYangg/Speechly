@@ -601,7 +601,7 @@ def stream_feedback(session_id, filename):
                         f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
                         f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
                         f"Note good things they did and things they can improve on, and don't be overly nice.\n"
-                        f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity, with either a new line or ---.\n" 
+                        f"Please put adequate spacing. There MUST be a clear separating --- between each chunk of the 5 listed categories that you are to give feedback on.\n" 
                         f"{language_instruction}"
                     )
                 else:
@@ -617,7 +617,7 @@ def stream_feedback(session_id, filename):
                         f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
                         f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
                         f"Note good things they did and things they can improve on, and don't be overly nice.\n"
-                        f"Please put adequate spacing. There MUST be a clear separating line between each major point for clarity. You MUST start each new paragraph with a new line or ---.\n" 
+                        f"Please put adequate spacing. There MUST be a clear separating --- between each chunk of the 5 listed categories that you are to give feedback on.\n" 
                         f"{language_instruction}"
                     )
                 
