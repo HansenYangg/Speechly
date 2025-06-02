@@ -510,8 +510,7 @@ def process_recording():
                         'speech_type': speech_type,
                         'duration': round(duration, 1),
                         'score_type': 'short' if duration < SHORT_RECORDING_THRESHOLD else 'full',
-                        'stream_url': f'/api/stream-feedback/{session_id}/{filename}',
-                        'language': language
+                        'stream_url': f'/api/stream-feedback/{session_id}/{filename}'
                     }
                 })
             
@@ -542,9 +541,6 @@ def stream_feedback(session_id, filename):
             speech_type = recording['speech_type']
             transcription_text = recording['transcription']
             
-            # Get language from request parameters
-            language = request.args.get('language', 'en')
-            
             # Calculate duration
             duration = len(recording['audio_data']) / (44100 * 2)
             
@@ -562,27 +558,7 @@ def stream_feedback(session_id, filename):
                 )
                 
                 repeat_context = ""
-                
-                # Language-specific instructions
-                language_instructions = {
-                    'en': "Make sure to do this in English.",
-                    'es': "Asegúrate de hacer esto en español.",
-                    'fr': "Assurez-vous de faire cela en français.",
-                    'de': "Stellen Sie sicher, dass Sie dies auf Deutsch machen.",
-                    'it': "Assicurati di farlo in italiano.",
-                    'pt': "Certifique-se de fazer isso em português.",
-                    'ru': "Убедитесь, что делаете это на русском языке.",
-                    'ja': "これを日本語で行ってください。",
-                    'ko': "이것을 한국어로 해주세요.",
-                    'zh': "请确保用中文进行。",
-                    'ar': "تأكد من القيام بذلك باللغة العربية.",
-                    'hi': "सुनिश्चित करें कि आप इसे हिंदी में करते हैं।",
-                    'tr': "Bunu Türkçe yaptığınızdan emin olun.",
-                    'nl': "Zorg ervoor dat je dit in het Nederlands doet.",
-                    'bn': "নিশ্চিত করুন যে আপনি এটি বাংলায় করছেন।"
-                }
-                
-                language_instruction = language_instructions.get(language, "Make sure to do this in English.")
+                language_instruction = f"Try to tailor the feedback based off the context of the user presentation. Make sure to do this in English."
                 
                 MIN_RECORDING_DURATION = 5
                 SHORT_RECORDING_THRESHOLD = 30
@@ -624,7 +600,7 @@ def stream_feedback(session_id, filename):
                 return prompt
             
             feedback_prompt = build_feedback_prompt(
-                topic, speech_type, transcription_text, duration, language, False
+                topic, speech_type, transcription_text, duration, 'en', False
             )
             
             # Stream the response from OpenAI
@@ -1606,12 +1582,12 @@ def serve_frontend():
             <div class="header-icon">
                 <i class="fas fa-microphone-alt"></i>
             </div>
-            <h1 id="mainTitle">AI Speech Evaluator</h1>
-            <p id="mainSubtitle">Transform your speaking skills with cutting-edge AI-powered feedback and analysis</p>
+            <h1>AI Speech Evaluator</h1>
+            <p>Transform your speaking skills with cutting-edge AI-powered feedback and analysis</p>
         </div>
 
         <div class="session-info" id="sessionInfo">
-            <i class="fas fa-user-circle"></i> <span id="sessionText">Your Session:</span> <span id="sessionId">Connecting...</span>
+            <i class="fas fa-user-circle"></i> Your Session: <span id="sessionId">Connecting...</span>
         </div>
 
         <div class="glass-card">
@@ -1619,11 +1595,11 @@ def serve_frontend():
                 <div class="section-icon">
                     <i class="fas fa-globe"></i>
                 </div>
-                <span id="languageSectionTitle">Language Selection</span>
+                <span>Language Selection</span>
             </div>
             
             <div class="language-selector">
-                <label for="languageSelect" id="languageLabel">Choose your target language:</label>
+                <label for="languageSelect" style="color: white; font-weight: 600;">Choose your target language:</label>
                 <div class="custom-select">
                     <select id="languageSelect">
                         <option value="en">en: English</option>
@@ -1650,25 +1626,25 @@ def serve_frontend():
                 <div class="section-icon">
                     <i class="fas fa-play-circle"></i>
                 </div>
-                <span id="actionsSectionTitle">Quick Actions</span>
+                <span>Quick Actions</span>
             </div>
 
             <div class="controls-grid">
                 <button class="btn btn-record" id="recordBtn" onclick="startRecording()">
                     <i class="fas fa-microphone"></i>
-                    <span id="recordBtnText">Record Speech (R)</span>
+                    Record Speech (R)
                 </button>
                 <button class="btn btn-list" onclick="listRecordings()">
                     <i class="fas fa-list"></i>
-                    <span id="viewBtnText">View Recordings (L)</span>
+                    View Recordings (L)
                 </button>
                 <button class="btn btn-play" onclick="showPlayDialog()">
                     <i class="fas fa-play"></i>
-                    <span id="playBtnText">Play Recording (P)</span>
+                    Play Recording (P)
                 </button>
                 <button class="btn btn-stop hidden" id="stopBtn" onclick="stopRecording()">
                     <i class="fas fa-stop"></i>
-                    <span id="stopBtnText">Stop Recording (Enter)</span>
+                    Stop Recording (Enter)
                 </button>
             </div>
 
@@ -1679,33 +1655,33 @@ def serve_frontend():
                     <div class="section-icon">
                         <i class="fas fa-cog"></i>
                     </div>
-                    <span id="setupSectionTitle">Recording Setup</span>
+                    <span>Recording Setup</span>
                 </div>
                 
                 <div class="form-grid">
                     <div class="input-group">
-                        <label for="topicInput" id="topicLabel">Speech Topic</label>
+                        <label for="topicInput">Speech Topic</label>
                         <input type="text" id="topicInput" placeholder="What will you be speaking about?" maxlength="200">
                     </div>
                     <div class="input-group">
-                        <label for="speechTypeInput" id="typeLabel">Speech Type</label>
+                        <label for="speechTypeInput">Speech Type</label>
                         <input type="text" id="speechTypeInput" placeholder="e.g., interview, presentation, debate" maxlength="100">
                     </div>
                 </div>
                 
                 <div class="checkbox-wrapper">
                     <input type="checkbox" id="repeatSpeech">
-                    <label for="repeatSpeech" id="repeatLabel">This is a repeat attempt on the same topic</label>
+                    <label for="repeatSpeech" style="color: white; text-transform: none; letter-spacing: normal;">This is a repeat attempt on the same topic</label>
                 </div>
                 
                 <div class="controls-grid" style="margin-top: 30px;">
                     <button class="btn btn-record" onclick="confirmRecording()">
                         <i class="fas fa-play"></i>
-                        <span id="startBtnText">Start Recording (T)</span>
+                        Start Recording (T)
                     </button>
                     <button class="btn btn-secondary" onclick="cancelRecording()">
                         <i class="fas fa-times"></i>
-                        <span id="cancelBtnText">Cancel (B)</span>
+                        Cancel (B)
                     </button>
                 </div>
             </div>
@@ -1714,16 +1690,16 @@ def serve_frontend():
                 <div class="recording-indicator">
                     <i class="fas fa-microphone"></i>
                 </div>
-                <div class="status-text" id="recordingText">Recording in Progress</div>
-                <div class="status-subtext" id="recordingSubtext">Speak clearly into your microphone. Click stop when finished or cancel to discard.</div>
+                <div class="status-text">Recording in Progress</div>
+                <div class="status-subtext">Speak clearly into your microphone. Click stop when finished or cancel to discard.</div>
                 <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center;">
                     <button class="btn btn-stop" onclick="stopRecording()">
                         <i class="fas fa-stop"></i>
-                        <span id="stopRecordingBtnText">Stop Recording (Enter)</span>
+                        Stop Recording (Enter)
                     </button>
                     <button class="btn btn-secondary" onclick="cancelActiveRecording()">
                         <i class="fas fa-times"></i>
-                        <span id="cancelActiveBtnText">Cancel (X)</span>
+                        Cancel (X)
                     </button>
                 </div>
             </div>
@@ -1733,7 +1709,7 @@ def serve_frontend():
                     <div class="section-icon">
                         <i class="fas fa-folder-open"></i>
                     </div>
-                    <span id="recordingsSectionTitle">Your Recordings</span>
+                    <span>Your Recordings</span>
                 </div>
                 <div class="recordings-grid" id="recordingsContainer">
                 </div>
@@ -1744,12 +1720,12 @@ def serve_frontend():
                     <div class="section-icon">
                         <i class="fas fa-brain"></i>
                     </div>
-                    <span id="feedbackSectionTitle">AI Feedback & Analysis</span>
+                    <span>AI Feedback & Analysis</span>
                 </div>
                 <div class="feedback-content" id="feedbackContent">
                     <div class="feedback-loading" id="feedbackLoading">
                         <i class="fas fa-robot" style="font-size: 1.5rem;"></i>
-                        <span id="feedbackLoadingText">AI is analyzing your speech</span>
+                        <span>AI is analyzing your speech</span>
                         <div class="loading-dots">
                             <span></span>
                             <span></span>
@@ -1765,7 +1741,7 @@ def serve_frontend():
                     <div class="section-icon">
                         <i class="fas fa-file-alt"></i>
                     </div>
-                    <span id="transcriptionSectionTitle">Speech Transcription</span>
+                    <span>Speech Transcription</span>
                 </div>
                 <div id="transcriptionContent">
                 </div>
@@ -1776,7 +1752,7 @@ def serve_frontend():
                     <div class="section-icon">
                         <i class="fas fa-volume-up"></i>
                     </div>
-                    <span id="playbackSectionTitle">Recording Playback</span>
+                    <span>Recording Playback</span>
                 </div>
                 <audio controls id="audioPlayer">
                     Your browser does not support the audio element.
@@ -1805,511 +1781,12 @@ def serve_frontend():
             });
         }
 
-        const translations = {
-            en: {
-                title: "AI Speech Evaluator",
-                subtitle: "Transform your speaking skills with cutting-edge AI-powered feedback and analysis",
-                sessionText: "Your Session:",
-                languageLabel: "Choose your target language:",
-                languageSection: "Language Selection",
-                actionsSection: "Quick Actions",
-                recordBtn: "Record Speech (R)",
-                viewBtn: "View Recordings (L)",
-                playBtn: "Play Recording (P)",
-                stopBtn: "Stop Recording (Enter)",
-                setupSection: "Recording Setup",
-                topicLabel: "Speech Topic",
-                topicPlaceholder: "What will you be speaking about?",
-                typeLabel: "Speech Type",
-                typePlaceholder: "e.g., interview, presentation, debate",
-                repeatLabel: "This is a repeat attempt on the same topic",
-                startBtn: "Start Recording (T)",
-                cancelBtn: "Cancel (B)",
-                recordingText: "Recording in Progress",
-                recordingSubtext: "Speak clearly into your microphone. Click stop when finished or cancel to discard.",
-                stopRecordingBtn: "Stop Recording (Enter)",
-                cancelActiveBtn: "Cancel (X)",
-                recordingsSection: "Your Recordings",
-                feedbackSection: "AI Feedback & Analysis",
-                transcriptionSection: "Speech Transcription",
-                playbackSection: "Recording Playback",
-                noRecordings: "No recordings found",
-                noRecordingsSubtext: "Create your first recording to get started!",
-                playRecBtn: "Play",
-                deleteBtn: "Delete",
-                feedbackLoadingText: "AI is analyzing your speech"
-            },
-            es: {
-                title: "Evaluador de Voz con IA",
-                subtitle: "Transforma tus habilidades de habla con retroalimentación y análisis impulsados por IA de vanguardia",
-                sessionText: "Tu Sesión:",
-                languageLabel: "Elige tu idioma objetivo:",
-                languageSection: "Selección de Idioma",
-                actionsSection: "Acciones Rápidas",
-                recordBtn: "Grabar Discurso (R)",
-                viewBtn: "Ver Grabaciones (L)",
-                playBtn: "Reproducir Grabación (P)",
-                stopBtn: "Detener Grabación (Enter)",
-                setupSection: "Configuración de Grabación",
-                topicLabel: "Tema del Discurso",
-                topicPlaceholder: "¿De qué vas a hablar?",
-                typeLabel: "Tipo de Discurso",
-                typePlaceholder: "ej., entrevista, presentación, debate",
-                repeatLabel: "Este es un intento repetido del mismo tema",
-                startBtn: "Iniciar Grabación (T)",
-                cancelBtn: "Cancelar (B)",
-                recordingText: "Grabación en Progreso",
-                recordingSubtext: "Habla claramente en tu micrófono. Haz clic en detener cuando termines o cancelar para descartar.",
-                stopRecordingBtn: "Detener Grabación (Enter)",
-                cancelActiveBtn: "Cancelar (X)",
-                recordingsSection: "Tus Grabaciones",
-                feedbackSection: "Retroalimentación y Análisis de IA",
-                transcriptionSection: "Transcripción del Discurso",
-                playbackSection: "Reproducción de Grabación",
-                noRecordings: "No se encontraron grabaciones",
-                noRecordingsSubtext: "¡Crea tu primera grabación para comenzar!",
-                playRecBtn: "Reproducir",
-                deleteBtn: "Eliminar",
-                feedbackLoadingText: "La IA está analizando tu discurso"
-            },
-            fr: {
-                title: "Évaluateur de Parole IA",
-                subtitle: "Transformez vos compétences oratoires avec des commentaires et analyses alimentés par une IA de pointe",
-                sessionText: "Votre Session:",
-                languageLabel: "Choisissez votre langue cible:",
-                languageSection: "Sélection de Langue",
-                actionsSection: "Actions Rapides",
-                recordBtn: "Enregistrer Discours (R)",
-                viewBtn: "Voir Enregistrements (L)",
-                playBtn: "Lire Enregistrement (P)",
-                stopBtn: "Arrêter Enregistrement (Entrée)",
-                setupSection: "Configuration d'Enregistrement",
-                topicLabel: "Sujet du Discours",
-                topicPlaceholder: "De quoi allez-vous parler?",
-                typeLabel: "Type de Discours",
-                typePlaceholder: "ex., entretien, présentation, débat",
-                repeatLabel: "C'est une tentative répétée sur le même sujet",
-                startBtn: "Commencer l'Enregistrement (T)",
-                cancelBtn: "Annuler (B)",
-                recordingText: "Enregistrement en Cours",
-                recordingSubtext: "Parlez clairement dans votre microphone. Cliquez sur arrêter quand vous avez terminé ou annuler pour rejeter.",
-                stopRecordingBtn: "Arrêter l'Enregistrement (Entrée)",
-                cancelActiveBtn: "Annuler (X)",
-                recordingsSection: "Vos Enregistrements",
-                feedbackSection: "Commentaires et Analyse IA",
-                transcriptionSection: "Transcription du Discours",
-                playbackSection: "Lecture de l'Enregistrement",
-                noRecordings: "Aucun enregistrement trouvé",
-                noRecordingsSubtext: "Créez votre premier enregistrement pour commencer!",
-                playRecBtn: "Lire",
-                deleteBtn: "Supprimer",
-                feedbackLoadingText: "L'IA analyse votre discours"
-            },
-            de: {
-                title: "KI-Sprachevaluator",
-                subtitle: "Verwandeln Sie Ihre Sprechfähigkeiten mit modernster KI-gestützter Rückmeldung und Analyse",
-                sessionText: "Ihre Sitzung:",
-                languageLabel: "Wählen Sie Ihre Zielsprache:",
-                languageSection: "Sprachauswahl",
-                actionsSection: "Schnelle Aktionen",
-                recordBtn: "Rede Aufnehmen (R)",
-                viewBtn: "Aufnahmen Anzeigen (L)",
-                playBtn: "Aufnahme Abspielen (P)",
-                stopBtn: "Aufnahme Stoppen (Enter)",
-                setupSection: "Aufnahme-Einrichtung",
-                topicLabel: "Rede-Thema",
-                topicPlaceholder: "Worüber werden Sie sprechen?",
-                typeLabel: "Rede-Typ",
-                typePlaceholder: "z.B., Interview, Präsentation, Debatte",
-                repeatLabel: "Dies ist ein wiederholter Versuch zum gleichen Thema",
-                startBtn: "Aufnahme Starten (T)",
-                cancelBtn: "Abbrechen (B)",
-                recordingText: "Aufnahme Läuft",
-                recordingSubtext: "Sprechen Sie deutlich in Ihr Mikrofon. Klicken Sie auf Stopp, wenn Sie fertig sind, oder auf Abbrechen zum Verwerfen.",
-                stopRecordingBtn: "Aufnahme Stoppen (Enter)",
-                cancelActiveBtn: "Abbrechen (X)",
-                recordingsSection: "Ihre Aufnahmen",
-                feedbackSection: "KI-Feedback & Analyse",
-                transcriptionSection: "Rede-Transkription",
-                playbackSection: "Aufnahme-Wiedergabe",
-                noRecordings: "Keine Aufnahmen gefunden",
-                noRecordingsSubtext: "Erstellen Sie Ihre erste Aufnahme, um zu beginnen!",
-                playRecBtn: "Abspielen",
-                deleteBtn: "Löschen",
-                feedbackLoadingText: "KI analysiert Ihre Rede"
-            },
-            it: {
-                title: "Valutatore di Voce AI",
-                subtitle: "Trasforma le tue abilità oratorie con feedback e analisi all'avanguardia alimentati dall'AI",
-                sessionText: "La Tua Sessione:",
-                languageLabel: "Scegli la tua lingua target:",
-                languageSection: "Selezione Lingua",
-                actionsSection: "Azioni Rapide",
-                recordBtn: "Registra Discorso (R)",
-                viewBtn: "Visualizza Registrazioni (L)",
-                playBtn: "Riproduci Registrazione (P)",
-                stopBtn: "Ferma Registrazione (Invio)",
-                setupSection: "Configurazione Registrazione",
-                topicLabel: "Argomento del Discorso",
-                topicPlaceholder: "Di cosa parlerai?",
-                typeLabel: "Tipo di Discorso",
-                typePlaceholder: "es., intervista, presentazione, dibattito",
-                repeatLabel: "Questo è un tentativo ripetuto sullo stesso argomento",
-                startBtn: "Inizia Registrazione (T)",
-                cancelBtn: "Annulla (B)",
-                recordingText: "Registrazione in Corso",
-                recordingSubtext: "Parla chiaramente nel tuo microfono. Clicca ferma quando hai finito o annulla per scartare.",
-                stopRecordingBtn: "Ferma Registrazione (Invio)",
-                cancelActiveBtn: "Annulla (X)",
-                recordingsSection: "Le Tue Registrazioni",
-                feedbackSection: "Feedback e Analisi AI",
-                transcriptionSection: "Trascrizione del Discorso",
-                playbackSection: "Riproduzione Registrazione",
-                noRecordings: "Nessuna registrazione trovata",
-                noRecordingsSubtext: "Crea la tua prima registrazione per iniziare!",
-                playRecBtn: "Riproduci",
-                deleteBtn: "Elimina",
-                feedbackLoadingText: "L'AI sta analizzando il tuo discorso"
-            },
-            pt: {
-                title: "Avaliador de Fala IA",
-                subtitle: "Transforme suas habilidades de fala com feedback e análise de ponta alimentados por IA",
-                sessionText: "Sua Sessão:",
-                languageLabel: "Escolha seu idioma alvo:",
-                languageSection: "Seleção de Idioma",
-                actionsSection: "Ações Rápidas",
-                recordBtn: "Gravar Discurso (R)",
-                viewBtn: "Ver Gravações (L)",
-                playBtn: "Reproduzir Gravação (P)",
-                stopBtn: "Parar Gravação (Enter)",
-                setupSection: "Configuração de Gravação",
-                topicLabel: "Tópico do Discurso",
-                topicPlaceholder: "Sobre o que você vai falar?",
-                typeLabel: "Tipo de Discurso",
-                typePlaceholder: "ex., entrevista, apresentação, debate",
-                repeatLabel: "Esta é uma tentativa repetida no mesmo tópico",
-                startBtn: "Iniciar Gravação (T)",
-                cancelBtn: "Cancelar (B)",
-                recordingText: "Gravação em Andamento",
-                recordingSubtext: "Fale claramente no seu microfone. Clique em parar quando terminar ou cancelar para descartar.",
-                stopRecordingBtn: "Parar Gravação (Enter)",
-                cancelActiveBtn: "Cancelar (X)",
-                recordingsSection: "Suas Gravações",
-                feedbackSection: "Feedback e Análise IA",
-                transcriptionSection: "Transcrição do Discurso",
-                playbackSection: "Reprodução da Gravação",
-                noRecordings: "Nenhuma gravação encontrada",
-                noRecordingsSubtext: "Crie sua primeira gravação para começar!",
-                playRecBtn: "Reproduzir",
-                deleteBtn: "Deletar",
-                feedbackLoadingText: "A IA está analisando seu discurso"
-            },
-            ru: {
-                title: "ИИ Оценщик Речи",
-                subtitle: "Преобразуйте свои речевые навыки с помощью передовой обратной связи и анализа на основе ИИ",
-                sessionText: "Ваша Сессия:",
-                languageLabel: "Выберите ваш целевой язык:",
-                languageSection: "Выбор Языка",
-                actionsSection: "Быстрые Действия",
-                recordBtn: "Записать Речь (R)",
-                viewBtn: "Просмотреть Записи (L)",
-                playBtn: "Воспроизвести Запись (P)",
-                stopBtn: "Остановить Запись (Enter)",
-                setupSection: "Настройка Записи",
-                topicLabel: "Тема Речи",
-                topicPlaceholder: "О чем вы будете говорить?",
-                typeLabel: "Тип Речи",
-                typePlaceholder: "напр., интервью, презентация, дебаты",
-                repeatLabel: "Это повторная попытка на ту же тему",
-                startBtn: "Начать Запись (T)",
-                cancelBtn: "Отменить (B)",
-                recordingText: "Запись в Процессе",
-                recordingSubtext: "Говорите четко в микрофон. Нажмите стоп когда закончите или отмените для отклонения.",
-                stopRecordingBtn: "Остановить Запись (Enter)",
-                cancelActiveBtn: "Отменить (X)",
-                recordingsSection: "Ваши Записи",
-                feedbackSection: "Обратная Связь и Анализ ИИ",
-                transcriptionSection: "Транскрипция Речи",
-                playbackSection: "Воспроизведение Записи",
-                noRecordings: "Записи не найдены",
-                noRecordingsSubtext: "Создайте свою первую запись для начала!",
-                playRecBtn: "Воспроизвести",
-                deleteBtn: "Удалить",
-                feedbackLoadingText: "ИИ анализирует вашу речь"
-            },
-            ja: {
-                title: "AI音声評価者",
-                subtitle: "最先端のAI駆動フィードバックと分析で話すスキルを変革する",
-                sessionText: "あなたのセッション:",
-                languageLabel: "対象言語を選択してください:",
-                languageSection: "言語選択",
-                actionsSection: "クイックアクション",
-                recordBtn: "音声録音 (R)",
-                viewBtn: "録音を表示 (L)",
-                playBtn: "録音を再生 (P)",
-                stopBtn: "録音停止 (Enter)",
-                setupSection: "録音設定",
-                topicLabel: "スピーチトピック",
-                topicPlaceholder: "何について話しますか？",
-                typeLabel: "スピーチタイプ",
-                typePlaceholder: "例：面接、プレゼンテーション、ディベート",
-                repeatLabel: "これは同じトピックでの再試行です",
-                startBtn: "録音開始 (T)",
-                cancelBtn: "キャンセル (B)",
-                recordingText: "録音中",
-                recordingSubtext: "マイクに向かってはっきりと話してください。終了したら停止をクリック、または破棄するにはキャンセルをクリックしてください。",
-                stopRecordingBtn: "録音停止 (Enter)",
-                cancelActiveBtn: "キャンセル (X)",
-                recordingsSection: "あなたの録音",
-                feedbackSection: "AIフィードバック＆分析",
-                transcriptionSection: "音声転写",
-                playbackSection: "録音再生",
-                noRecordings: "録音が見つかりません",
-                noRecordingsSubtext: "始めるために最初の録音を作成してください！",
-                playRecBtn: "再生",
-                deleteBtn: "削除",
-                feedbackLoadingText: "AIがあなたの音声を分析しています"
-            },
-            ko: {
-                title: "AI 음성 평가자",
-                subtitle: "최첨단 AI 기반 피드백과 분석으로 말하기 기술을 혁신하세요",
-                sessionText: "당신의 세션:",
-                languageLabel: "목표 언어를 선택하세요:",
-                languageSection: "언어 선택",
-                actionsSection: "빠른 작업",
-                recordBtn: "음성 녹음 (R)",
-                viewBtn: "녹음 보기 (L)",
-                playBtn: "녹음 재생 (P)",
-                stopBtn: "녹음 중지 (Enter)",
-                setupSection: "녹음 설정",
-                topicLabel: "연설 주제",
-                topicPlaceholder: "무엇에 대해 말할 것인가요?",
-                typeLabel: "연설 유형",
-                typePlaceholder: "예: 면접, 발표, 토론",
-                repeatLabel: "같은 주제에 대한 재시도입니다",
-                startBtn: "녹음 시작 (T)",
-                cancelBtn: "취소 (B)",
-                recordingText: "녹음 진행 중",
-                recordingSubtext: "마이크에 대고 명확히 말하세요. 완료되면 중지를 클릭하거나 삭제하려면 취소를 클릭하세요.",
-                stopRecordingBtn: "녹음 중지 (Enter)",
-                cancelActiveBtn: "취소 (X)",
-                recordingsSection: "당신의 녹음",
-                feedbackSection: "AI 피드백 & 분석",
-                transcriptionSection: "음성 전사",
-                playbackSection: "녹음 재생",
-                noRecordings: "녹음을 찾을 수 없습니다",
-                noRecordingsSubtext: "시작하려면 첫 번째 녹음을 만드세요!",
-                playRecBtn: "재생",
-                deleteBtn: "삭제",
-                feedbackLoadingText: "AI가 당신의 음성을 분석하고 있습니다"
-            },
-            zh: {
-                title: "AI语音评估器",
-                subtitle: "通过尖端的AI驱动反馈和分析改造您的口语技能",
-                sessionText: "您的会话:",
-                languageLabel: "选择您的目标语言:",
-                languageSection: "语言选择",
-                actionsSection: "快速操作",
-                recordBtn: "录制演讲 (R)",
-                viewBtn: "查看录音 (L)",
-                playBtn: "播放录音 (P)",
-                stopBtn: "停止录音 (Enter)",
-                setupSection: "录音设置",
-                topicLabel: "演讲主题",
-                topicPlaceholder: "您将谈论什么？",
-                typeLabel: "演讲类型",
-                typePlaceholder: "例如：面试、演示、辩论",
-                repeatLabel: "这是同一主题的重复尝试",
-                startBtn: "开始录音 (T)",
-                cancelBtn: "取消 (B)",
-                recordingText: "录音进行中",
-                recordingSubtext: "请对着麦克风清楚地说话。完成后点击停止或取消以丢弃。",
-                stopRecordingBtn: "停止录音 (Enter)",
-                cancelActiveBtn: "取消 (X)",
-                recordingsSection: "您的录音",
-                feedbackSection: "AI反馈和分析",
-                transcriptionSection: "语音转写",
-                playbackSection: "录音回放",
-                noRecordings: "未找到录音",
-                noRecordingsSubtext: "创建您的第一个录音开始吧！",
-                playRecBtn: "播放",
-                deleteBtn: "删除",
-                feedbackLoadingText: "AI正在分析您的语音"
-            },
-            ar: {
-                title: "مقيم الكلام بالذكاء الاصطناعي",
-                subtitle: "حول مهاراتك في التحدث بالتعليقات والتحليل المتطور المدعوم بالذكاء الاصطناعي",
-                sessionText: "جلستك:",
-                languageLabel: "اختر لغتك المستهدفة:",
-                languageSection: "اختيار اللغة",
-                actionsSection: "الإجراءات السريعة",
-                recordBtn: "تسجيل الكلام (R)",
-                viewBtn: "عرض التسجيلات (L)",
-                playBtn: "تشغيل التسجيل (P)",
-                stopBtn: "إيقاف التسجيل (Enter)",
-                setupSection: "إعداد التسجيل",
-                topicLabel: "موضوع الكلام",
-                topicPlaceholder: "عن ماذا ستتحدث؟",
-                typeLabel: "نوع الكلام",
-                typePlaceholder: "مثل: مقابلة، عرض تقديمي، مناقشة",
-                repeatLabel: "هذه محاولة متكررة لنفس الموضوع",
-                startBtn: "بدء التسجيل (T)",
-                cancelBtn: "إلغاء (B)",
-                recordingText: "التسجيل جاري",
-                recordingSubtext: "تحدث بوضوح في الميكروفون. انقر على إيقاف عند الانتهاء أو إلغاء للتجاهل.",
-                stopRecordingBtn: "إيقاف التسجيل (Enter)",
-                cancelActiveBtn: "إلغاء (X)",
-                recordingsSection: "تسجيلاتك",
-                feedbackSection: "التعليقات والتحليل بالذكاء الاصطناعي",
-                transcriptionSection: "نسخ الكلام",
-                playbackSection: "تشغيل التسجيل",
-                noRecordings: "لم يتم العثور على تسجيلات",
-                noRecordingsSubtext: "أنشئ تسجيلك الأول للبدء!",
-                playRecBtn: "تشغيل",
-                deleteBtn: "حذف",
-                feedbackLoadingText: "الذكاء الاصطناعي يحلل كلامك"
-            },
-            hi: {
-                title: "AI वाक् मूल्यांकनकर्ता",
-                subtitle: "अत्याधुनिक AI-संचालित फीडबैक और विश्लेषण के साथ अपने बोलने के कौशल को बदलें",
-                sessionText: "आपका सत्र:",
-                languageLabel: "अपनी लक्षित भाषा चुनें:",
-                languageSection: "भाषा चयन",
-                actionsSection: "त्वरित कार्य",
-                recordBtn: "भाषण रिकॉर्ड करें (R)",
-                viewBtn: "रिकॉर्डिंग देखें (L)",
-                playBtn: "रिकॉर्डिंग चलाएं (P)",
-                stopBtn: "रिकॉर्डिंग रोकें (Enter)",
-                setupSection: "रिकॉर्डिंग सेटअप",
-                topicLabel: "भाषण विषय",
-                topicPlaceholder: "आप किस बारे में बात करेंगे?",
-                typeLabel: "भाषण प्रकार",
-                typePlaceholder: "जैसे: साक्षात्कार, प्रस्तुति, बहस",
-                repeatLabel: "यह उसी विषय पर एक दोहराया प्रयास है",
-                startBtn: "रिकॉर्डिंग शुरू करें (T)",
-                cancelBtn: "रद्द करें (B)",
-                recordingText: "रिकॉर्डिंग चल रही है",
-                recordingSubtext: "अपने माइक्रोफोन में स्पष्ट रूप से बोलें। समाप्त होने पर रोकें क्लिक करें या रद्द करने के लिए रद्द करें।",
-                stopRecordingBtn: "रिकॉर्डिंग रोकें (Enter)",
-                cancelActiveBtn: "रद्द करें (X)",
-                recordingsSection: "आपकी रिकॉर्डिंग",
-                feedbackSection: "AI फीडबैक और विश्लेषण",
-                transcriptionSection: "भाषण प्रतिलेखन",
-                playbackSection: "रिकॉर्डिंग प्लेबैक",
-                noRecordings: "कोई रिकॉर्डिंग नहीं मिली",
-                noRecordingsSubtext: "शुरू करने के लिए अपनी पहली रिकॉर्डिंग बनाएं!",
-                playRecBtn: "चलाएं",
-                deleteBtn: "हटाएं",
-                feedbackLoadingText: "AI आपके भाषण का विश्लेषण कर रहा है"
-            },
-            tr: {
-                title: "AI Konuşma Değerlendiricisi",
-                subtitle: "En gelişmiş AI destekli geri bildirim ve analiz ile konuşma becerilerinizi dönüştürün",
-                sessionText: "Oturumunuz:",
-                languageLabel: "Hedef dilinizi seçin:",
-                languageSection: "Dil Seçimi",
-                actionsSection: "Hızlı İşlemler",
-                recordBtn: "Konuşma Kaydet (R)",
-                viewBtn: "Kayıtları Görüntüle (L)",
-                playBtn: "Kaydı Oynat (P)",
-                stopBtn: "Kaydı Durdur (Enter)",
-                setupSection: "Kayıt Kurulumu",
-                topicLabel: "Konuşma Konusu",
-                topicPlaceholder: "Ne hakkında konuşacaksınız?",
-                typeLabel: "Konuşma Türü",
-                typePlaceholder: "örn. mülakat, sunum, tartışma",
-                repeatLabel: "Bu aynı konu için tekrar bir deneme",
-                startBtn: "Kaydı Başlat (T)",
-                cancelBtn: "İptal (B)",
-                recordingText: "Kayıt Devam Ediyor",
-                recordingSubtext: "Mikrofonunuza net bir şekilde konuşun. Bittiğinde durdur'a tıklayın veya atmak için iptal edin.",
-                stopRecordingBtn: "Kaydı Durdur (Enter)",
-                cancelActiveBtn: "İptal (X)",
-                recordingsSection: "Kayıtlarınız",
-                feedbackSection: "AI Geri Bildirim ve Analiz",
-                transcriptionSection: "Konuşma Transkripti",
-                playbackSection: "Kayıt Oynatma",
-                noRecordings: "Kayıt bulunamadı",
-                noRecordingsSubtext: "Başlamak için ilk kaydınızı oluşturun!",
-                playRecBtn: "Oynat",
-                deleteBtn: "Sil",
-                feedbackLoadingText: "AI konuşmanızı analiz ediyor"
-            },
-            nl: {
-                title: "AI Spraakevaluator",
-                subtitle: "Transformeer je spreekvaardigheden met geavanceerde AI-aangedreven feedback en analyse",
-                sessionText: "Jouw Sessie:",
-                languageLabel: "Kies je doeltaal:",
-                languageSection: "Taalselectie",
-                actionsSection: "Snelle Acties",
-                recordBtn: "Spraak Opnemen (R)",
-                viewBtn: "Opnames Bekijken (L)",
-                playBtn: "Opname Afspelen (P)",
-                stopBtn: "Opname Stoppen (Enter)",
-                setupSection: "Opname Instelling",
-                topicLabel: "Spraak Onderwerp",
-                topicPlaceholder: "Waarover ga je spreken?",
-                typeLabel: "Spraak Type",
-                typePlaceholder: "bijv. interview, presentatie, debat",
-                repeatLabel: "Dit is een herhaalde poging van hetzelfde onderwerp",
-                startBtn: "Opname Starten (T)",
-                cancelBtn: "Annuleren (B)",
-                recordingText: "Opname Bezig",
-                recordingSubtext: "Spreek duidelijk in je microfoon. Klik op stoppen wanneer klaar of annuleer om te verwerpen.",
-                stopRecordingBtn: "Opname Stoppen (Enter)",
-                cancelActiveBtn: "Annuleren (X)",
-                recordingsSection: "Jouw Opnames",
-                feedbackSection: "AI Feedback & Analyse",
-                transcriptionSection: "Spraak Transcriptie",
-                playbackSection: "Opname Afspelen",
-                noRecordings: "Geen opnames gevonden",
-                noRecordingsSubtext: "Maak je eerste opname om te beginnen!",
-                playRecBtn: "Afspelen",
-                deleteBtn: "Verwijderen",
-                feedbackLoadingText: "AI analyseert je spraak"
-            },
-            bn: {
-                title: "AI বক্তৃতা মূল্যায়নকারী",
-                subtitle: "অত্যাধুনিক AI-চালিত প্রতিক্রিয়া এবং বিশ্লেষণের সাথে আপনার কথা বলার দক্ষতা পরিবর্তন করুন",
-                sessionText: "আপনার সেশন:",
-                languageLabel: "আপনার লক্ষ্য ভাষা চয়ন করুন:",
-                languageSection: "ভাষা নির্বাচন",
-                actionsSection: "দ্রুত কর্ম",
-                recordBtn: "বক্তৃতা রেকর্ড করুন (R)",
-                viewBtn: "রেকর্ডিং দেখুন (L)",
-                playBtn: "রেকর্ডিং চালান (P)",
-                stopBtn: "রেকর্ডিং বন্ধ করুন (Enter)",
-                setupSection: "রেকর্ডিং সেটআপ",
-                topicLabel: "বক্তৃতার বিষয়",
-                topicPlaceholder: "আপনি কী নিয়ে কথা বলবেন?",
-                typeLabel: "বক্তৃতার ধরন",
-                typePlaceholder: "যেমন: সাক্ষাৎকার, উপস্থাপনা, বিতর্ক",
-                repeatLabel: "এটি একই বিষয়ে একটি পুনরাবৃত্ত প্রচেষ্টা",
-                startBtn: "রেকর্ডিং শুরু করুন (T)",
-                cancelBtn: "বাতিল করুন (B)",
-                recordingText: "রেকর্ডিং চলমান",
-                recordingSubtext: "আপনার মাইক্রোফোনে স্পষ্টভাবে কথা বলুন। শেষ হলে স্টপ ক্লিক করুন বা বাতিল করতে বাতিল করুন।",
-                stopRecordingBtn: "রেকর্ডিং বন্ধ করুন (Enter)",
-                cancelActiveBtn: "বাতিল করুন (X)",
-                recordingsSection: "আপনার রেকর্ডিং",
-                feedbackSection: "AI প্রতিক্রিয়া এবং বিশ্লেষণ",
-                transcriptionSection: "বক্তৃতা প্রতিলিপি",
-                playbackSection: "রেকর্ডিং প্লেব্যাক",
-                noRecordings: "কোন রেকর্ডিং পাওয়া যায়নি",
-                noRecordingsSubtext: "শুরু করতে আপনার প্রথম রেকর্ডিং তৈরি করুন!",
-                playRecBtn: "চালান",
-                deleteBtn: "মুছুন",
-                feedbackLoadingText: "AI আপনার বক্তৃতা বিশ্লেষণ করছে"
-            }
-        };
-
         document.addEventListener('DOMContentLoaded', function() {
             initializeSession();
             setupKeyboardShortcuts();
             loadLanguages();
             checkHealth();
             setupBeforeUnload();
-            updateLanguage(); // Initialize with default language
         });
 
         async function initializeSession() {
@@ -2390,6 +1867,42 @@ def serve_frontend():
             }
         }
 
+        const translations = {
+            en: {
+                title: "AI Speech Evaluator",
+                subtitle: "Transform your speaking skills with cutting-edge AI-powered feedback and analysis",
+                sessionText: "Your Session:",
+                languageLabel: "Choose your target language:",
+                languageSection: "Language Selection",
+                actionsSection: "Quick Actions",
+                recordBtn: "Record Speech (R)",
+                viewBtn: "View Recordings (L)",
+                playBtn: "Play Recording (P)",
+                stopBtn: "Stop Recording (Enter)",
+                setupSection: "Recording Setup",
+                topicLabel: "Speech Topic",
+                topicPlaceholder: "What will you be speaking about?",
+                typeLabel: "Speech Type",
+                typePlaceholder: "e.g., interview, presentation, debate",
+                repeatLabel: "This is a repeat attempt on the same topic",
+                startBtn: "Start Recording (T)",
+                cancelBtn: "Cancel (B)",
+                recordingText: "Recording in Progress",
+                recordingSubtext: "Speak clearly into your microphone. Click stop when finished or cancel to discard.",
+                cancelActiveBtn: "Cancel (X)",
+                recordingsSection: "Your Recordings",
+                feedbackSection: "AI Feedback & Analysis",
+                transcriptionSection: "Speech Transcription",
+                playbackSection: "Recording Playback",
+                noRecordings: "No recordings found",
+                noRecordingsSubtext: "Create your first recording to get started!",
+                playRecBtn: "Play",
+                deleteBtn: "Delete",
+                recordingTooShort: "Recording Too Short",
+                recordingTooShortText: "Sorry! The recording was too short to generate feedback for. Please try again with a longer speech."
+            }
+        };
+
         document.getElementById('languageSelect').addEventListener('change', function() {
             currentLanguage = this.value;
             updateLanguage();
@@ -2401,43 +1914,48 @@ def serve_frontend():
             const lang = translations[currentLanguage] || translations.en;
             
             // Update main content
-            document.getElementById('mainTitle').textContent = lang.title;
-            document.getElementById('mainSubtitle').textContent = lang.subtitle;
-            document.getElementById('sessionText').textContent = lang.sessionText;
+            document.querySelector('.header h1').textContent = lang.title;
+            document.querySelector('.header p').textContent = lang.subtitle;
+            document.querySelector('#sessionInfo').innerHTML = `<i class="fas fa-user-circle"></i> ${lang.sessionText} <span id="sessionId">${document.getElementById('sessionId').textContent}</span>`;
             
             // Update language selector
-            document.getElementById('languageLabel').textContent = lang.languageLabel;
-            document.getElementById('languageSectionTitle').textContent = lang.languageSection;
+            document.querySelector('label[for="languageSelect"]').textContent = lang.languageLabel;
+            document.querySelector('.language-selector').previousElementSibling.querySelector('span').textContent = lang.languageSection;
             
             // Update quick actions
-            document.getElementById('actionsSectionTitle').textContent = lang.actionsSection;
-            document.getElementById('recordBtnText').textContent = lang.recordBtn;
-            document.getElementById('viewBtnText').textContent = lang.viewBtn;
-            document.getElementById('playBtnText').textContent = lang.playBtn;
-            document.getElementById('stopBtnText').textContent = lang.stopBtn;
+            document.querySelector('.controls-grid').previousElementSibling.querySelector('span').textContent = lang.actionsSection;
+            document.querySelector('#recordBtn').innerHTML = `<i class="fas fa-microphone"></i> ${lang.recordBtn}`;
+            document.querySelector('.btn-list').innerHTML = `<i class="fas fa-list"></i> ${lang.viewBtn}`;
+            document.querySelector('.btn-play').innerHTML = `<i class="fas fa-play"></i> ${lang.playBtn}`;
+            document.querySelector('#stopBtn').innerHTML = `<i class="fas fa-stop"></i> ${lang.stopBtn}`;
             
             // Update recording setup
-            document.getElementById('setupSectionTitle').textContent = lang.setupSection;
-            document.getElementById('topicLabel').textContent = lang.topicLabel;
-            document.getElementById('topicInput').placeholder = lang.topicPlaceholder;
-            document.getElementById('typeLabel').textContent = lang.typeLabel;
-            document.getElementById('speechTypeInput').placeholder = lang.typePlaceholder;
-            document.getElementById('repeatLabel').textContent = lang.repeatLabel;
-            document.getElementById('startBtnText').textContent = lang.startBtn;
-            document.getElementById('cancelBtnText').textContent = lang.cancelBtn;
+            document.querySelector('#recordingSetup .section-title span').textContent = lang.setupSection;
+            document.querySelector('label[for="topicInput"]').textContent = lang.topicLabel;
+            document.querySelector('#topicInput').placeholder = lang.topicPlaceholder;
+            document.querySelector('label[for="speechTypeInput"]').textContent = lang.typeLabel;
+            document.querySelector('#speechTypeInput').placeholder = lang.typePlaceholder;
+            document.querySelector('label[for="repeatSpeech"]').textContent = lang.repeatLabel;
+            
+            // Update recording setup buttons
+            const setupButtons = document.querySelectorAll('#recordingSetup .controls-grid .btn');
+            setupButtons[0].innerHTML = `<i class="fas fa-play"></i> ${lang.startBtn}`;
+            setupButtons[1].innerHTML = `<i class="fas fa-times"></i> ${lang.cancelBtn}`;
             
             // Update recording status
-            document.getElementById('recordingText').textContent = lang.recordingText;
-            document.getElementById('recordingSubtext').textContent = lang.recordingSubtext;
-            document.getElementById('stopRecordingBtnText').textContent = lang.stopRecordingBtn;
-            document.getElementById('cancelActiveBtnText').textContent = lang.cancelActiveBtn;
+            document.querySelector('.status-text').textContent = lang.recordingText;
+            document.querySelector('.status-subtext').textContent = lang.recordingSubtext;
+            
+            // Update recording status buttons
+            const statusButtons = document.querySelectorAll('#recordingStatus .btn');
+            statusButtons[0].innerHTML = `<i class="fas fa-stop"></i> ${lang.stopBtn}`;
+            statusButtons[1].innerHTML = `<i class="fas fa-times"></i> ${lang.cancelActiveBtn}`;
             
             // Update sections
-            document.getElementById('recordingsSectionTitle').textContent = lang.recordingsSection;
-            document.getElementById('feedbackSectionTitle').textContent = lang.feedbackSection;
-            document.getElementById('transcriptionSectionTitle').textContent = lang.transcriptionSection;
-            document.getElementById('playbackSectionTitle').textContent = lang.playbackSection;
-            document.getElementById('feedbackLoadingText').textContent = lang.feedbackLoadingText;
+            document.querySelector('#recordingsList .section-title span').textContent = lang.recordingsSection;
+            document.querySelector('#feedbackSection .section-title span').textContent = lang.feedbackSection;
+            document.querySelector('#transcriptionSection .section-title span').textContent = lang.transcriptionSection;
+            document.querySelector('#audioControls .section-title span').textContent = lang.playbackSection;
         }
 
         async function apiCall(endpoint, options = {}) {
@@ -2863,7 +2381,7 @@ def serve_frontend():
 
                 if (result.success) {
                     displayInitialResults(result.result);
-                    startFeedbackStream(result.result.stream_url + '?language=' + currentLanguage);
+                    startFeedbackStream(result.result.stream_url);
                     showStatus('✅ Recording processed successfully!', 'success');
                 } else {
                     showStatus('❌ Processing failed: ' + result.error, 'error');
