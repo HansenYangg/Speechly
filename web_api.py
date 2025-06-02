@@ -1903,8 +1903,6 @@ def serve_frontend():
             }
         };
 
-        
-
         document.getElementById('languageSelect').addEventListener('change', function() {
             currentLanguage = this.value;
             updateLanguage();
