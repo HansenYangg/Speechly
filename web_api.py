@@ -627,7 +627,7 @@ def stream_feedback(session_id, filename):
                 topic, speech_type, transcription_text, duration, language, False
             )
             
-            # Stream the response from OpenAI
+            # Stream the response from open ai
             stream = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
