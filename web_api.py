@@ -596,11 +596,10 @@ def stream_feedback(session_id, filename):
                         f"Speech type: {speech_type}\n"
                         f"Transcription: '{transcription_text}'\n\n"
                         f"{repeat_context}\n"
-                        f"Please grade out of a total 100 points and give constructive feedback without being overly nice. "
+                        f"Please grade out of a total 100 points and give constructive feedback as if you were a teacher/college professor, and start it off by listing what the speech topic/type is before diving into feedback.\n"
                         f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
                         f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
-                        f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
-                        f"Note good things they did and things they can improve on, and don't be overly nice.\n"
+                        f"Note good things they did and things they can improve on. Try to give an amount of feedback relatively proportional to the length of the speech (longer ones should generally have more feedback), but don't force it.\n"
                         f"Please put adequate spacing. There MUST be a clear separating --- between each chunk of the 5 listed categories that you are to give feedback on.\n" 
                         f"{language_instruction}"
                     )
@@ -612,11 +611,10 @@ def stream_feedback(session_id, filename):
                         f"Speech type: {speech_type}\n"
                         f"Transcription: '{transcription_text}'\n\n"
                         f"{repeat_context}\n"
-                        f"Please grade out of a total 100 points and give constructive feedback without being overly nice. "
+                        f"Please grade out of a total 100 points and give constructive feedback as if you were a teacher/college professor, and start it off by listing what the speech topic/type is as well as a brief summary of the speech before diving into feedback.\n"
                         f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
                         f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
-                        f"Comment on things such as their structure of the speech, clarity, volume, confidence, intonation, pauses, etc.\n"
-                        f"Note good things they did and things they can improve on, and don't be overly nice.\n"
+                        f"Note good things they did and things they can improve on. Try to give an amount of feedback relatively proportional to the length of the speech (longer ones should generally have more feedback), but don't force it.\n"
                         f"Please put adequate spacing. There MUST be a clear separating --- between each chunk of the 5 listed categories that you are to give feedback on.\n" 
                         f"{language_instruction}"
                     )
@@ -1689,7 +1687,7 @@ def serve_frontend():
                     </div>
                     <div class="input-group">
                         <label for="speechTypeInput">Speech Type</label>
-                        <input type="text" id="speechTypeInput" placeholder="e.g., interview, presentation, debate" maxlength="100">
+                        <input type="text" id="speechTypeInput" placeholder="e.g., school presentation, pitch for a company, interview" maxlength="100">
                     </div>
                 </div>
                 
@@ -1907,7 +1905,7 @@ def serve_frontend():
                 topicLabel: "Speech Topic",
                 topicPlaceholder: "What will you be speaking about?",
                 typeLabel: "Speech Type",
-                typePlaceholder: "e.g., interview, presentation, debate",
+                typePlaceholder: "e.g., school presentation, pitch for a company, interview",
                 repeatLabel: "This is a repeat attempt on the same topic",
                 startBtn: "Start Recording (T)",
                 cancelBtn: "Cancel (B)",

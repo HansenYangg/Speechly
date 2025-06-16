@@ -108,3 +108,6 @@ class Validator:
         
         logger.debug(f"Duration validated: {duration} seconds")
         return True
+    
+
+    
