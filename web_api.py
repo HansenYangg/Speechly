@@ -1814,6 +1814,9 @@ def serve_frontend():
             position: relative;
             overflow: hidden;
         }
+        #transcriptionSection .section-title {
+            color: #4a5568;
+        }
 
         .transcription-section::before {
             content: '';
