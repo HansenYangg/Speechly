@@ -292,6 +292,34 @@ def get_recording(filename):
                 'success': False,
                 'error': str(e)
             }), 500
+        
+        from flask import Response
+        response = Response(
+            recording['audio_data'],
+            mimetype='audio/wav',
+            headers={
+                'Content-Disposition': f'attachment; filename={filename}'
+            }
+        )
+        return response
+    
+    try:
+        Validator.validate_filename(filename)
+        full_path = speech_evaluator.audio_player.file_manager.get_recording_path(filename)
+        
+        if not os.path.exists(full_path):
+            return jsonify({
+                'success': False,
+                'error': 'Recording not found'
+            }), 404
+        
+        return send_file(full_path, as_attachment=True)
+    except Exception as e:
+        logger.error(f"Error getting recording {filename}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 
