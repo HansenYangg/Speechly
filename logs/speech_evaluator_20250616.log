@@ -1,0 +1,15 @@
+2025-06-16 01:11:30,770 - config_validator - INFO - Starting system validation...
+2025-06-16 01:11:30,772 - config_validator - INFO - File system validation successful
+2025-06-16 01:11:30,772 - config_validator - INFO - ✓ File System validation passed
+2025-06-16 01:11:31,003 - config_validator - INFO - Audio system validation successful
+2025-06-16 01:11:31,003 - config_validator - INFO - ✓ Audio System validation passed
+2025-06-16 01:11:31,003 - config_validator - INFO - Speech recognition validation successful
+2025-06-16 01:11:31,003 - config_validator - INFO - ✓ Speech Recognition validation passed
+2025-06-16 01:11:32,657 - config_validator - INFO - OpenAI API validation successful
+2025-06-16 01:11:32,657 - config_validator - INFO - ✓ OpenAI API validation passed
+2025-06-16 01:11:34,092 - config_validator - INFO - Translation API validation successful
+2025-06-16 01:11:34,093 - config_validator - INFO - ✓ Translation API validation passed
+2025-06-16 01:11:34,093 - config_validator - INFO - System validation completed
+2025-06-16 01:11:34,093 - persistence - INFO - Session data loaded
+2025-06-16 01:11:34,093 - speech_manager - INFO - Loaded 8 previous speeches from session
+2025-06-16 01:11:34,093 - __main__ - INFO - Speech evaluator initialized successfully
