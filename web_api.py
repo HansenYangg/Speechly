@@ -2038,11 +2038,11 @@ def serve_frontend():
                 <i class="fas fa-microphone-alt"></i>
             </div>
             <h1>AI Speech Evaluator</h1>
-            <p>Transform your speaking skills with cutting-edge AI-powered feedback and neural analysis</p>
+            <p>Elevate your speaking skills with cutting-edge AI-powered feedback and analysis</p>
         </div>
 
         <div class="session-info" id="sessionInfo">
-            <i class="fas fa-user-circle"></i> Neural Session: <span id="sessionId">Initializing...</span>
+            <i class="fas fa-user-circle"></i> Session: <span id="sessionId">Initializing...</span>
         </div>
 
         <div class="glass-card">
@@ -2081,7 +2081,7 @@ def serve_frontend():
                 <div class="section-icon">
                     <i class="fas fa-rocket"></i>
                 </div>
-                <span>Neural Controls</span>
+                <span>Controls</span>
             </div>
 
             <div class="controls-grid">
@@ -2110,7 +2110,7 @@ def serve_frontend():
                     <div class="section-icon">
                         <i class="fas fa-cogs"></i>
                     </div>
-                    <span>Neural Configuration</span>
+                    <span>Configuration</span>
                 </div>
                 
                 <div class="form-grid">
@@ -2120,7 +2120,7 @@ def serve_frontend():
                     </div>
                     <div class="input-group">
                         <label for="speechTypeInput">Speech Type</label>
-                        <input type="text" id="speechTypeInput" placeholder="e.g., interview, presentation, debate" maxlength="100">
+                        <input type="text" id="speechTypeInput" placeholder="e.g., short presentation, pitch for a company, interview" maxlength="100">
                     </div>
                 </div>
                 
@@ -2145,8 +2145,8 @@ def serve_frontend():
                 <div class="recording-indicator">
                     <i class="fas fa-microphone"></i>
                 </div>
-                <div class="status-text">Neural Recording Active</div>
-                <div class="status-subtext">Speak clearly into your microphone. Neural networks are capturing your speech patterns.</div>
+                <div class="status-text">Recording Active</div>
+                <div class="status-subtext">Please speak clearly into your microphone.</div>
                 <div style="margin-top: 25px; display: flex; gap: 20px; justify-content: center;">
                     <button class="btn btn-stop" onclick="stopRecording()">
                         <i class="fas fa-stop"></i>
@@ -2164,7 +2164,7 @@ def serve_frontend():
                     <div class="section-icon">
                         <i class="fas fa-folder-open"></i>
                     </div>
-                    <span>Neural Archive</span>
+                    <span>Recording List</span>
                 </div>
                 <div class="recordings-grid" id="recordingsContainer">
                 </div>
@@ -2175,12 +2175,12 @@ def serve_frontend():
                     <div class="section-icon">
                         <i class="fas fa-brain"></i>
                     </div>
-                    <span>AI Neural Analysis</span>
+                    <span>AI Analysis</span>
                 </div>
                 <div class="feedback-content" id="feedbackContent">
                     <div class="feedback-loading" id="feedbackLoading">
                         <i class="fas fa-robot"></i>
-                        <span>Neural networks analyzing speech patterns</span>
+                        <span>AI is analyzing speech patterns</span>
                         <div class="loading-dots">
                             <span></span>
                             <span></span>
@@ -2196,7 +2196,7 @@ def serve_frontend():
                     <div class="section-icon">
                         <i class="fas fa-file-alt"></i>
                     </div>
-                    <span>Neural Transcription</span>
+                    <span>Transcription</span>
                 </div>
                 <div id="transcriptionContent">
                 </div>
@@ -2325,50 +2325,50 @@ def serve_frontend():
         const translations = {
             en: {
                 title: "AI Speech Evaluator",
-                subtitle: "Transform your speaking skills with cutting-edge AI-powered feedback and neural analysis",
-                sessionText: "Neural Session:",
+                subtitle: "Transform your speaking skills with cutting-edge AI-powered feedback and analysis",
+                sessionText: "Your Session:",
                 languageLabel: "Choose your target language:",
                 languageSection: "Language Selection",
-                actionsSection: "Neural Controls",
+                actionsSection: "Quick Actions",
                 recordBtn: "Record Speech (R)",
-                viewBtn: "View Archive (L)",
+                viewBtn: "View Recordings (L)",
                 playBtn: "Play Recording (P)",
                 stopBtn: "Stop Recording (Enter)",
-                setupSection: "Neural Configuration",
+                setupSection: "Recording Setup",
                 topicLabel: "Speech Topic",
                 topicPlaceholder: "What will you be speaking about?",
                 typeLabel: "Speech Type",
                 typePlaceholder: "e.g., interview, presentation, debate",
                 repeatLabel: "This is a repeat attempt on the same topic",
-                startBtn: "Initiate Recording (T)",
+                startBtn: "Start Recording (T)",
                 cancelBtn: "Cancel (B)",
-                recordingText: "Neural Recording Active",
-                recordingSubtext: "Speak clearly into your microphone. Neural networks are capturing your speech patterns.",
+                recordingText: "Recording in Progress",
+                recordingSubtext: "Speak clearly into your microphone. Click stop when finished or cancel to discard.",
                 cancelActiveBtn: "Cancel (X)",
-                recordingsSection: "Neural Archive",
-                feedbackSection: "AI Neural Analysis",
-                transcriptionSection: "Neural Transcription",
-                playbackSection: "Playback System",
+                recordingsSection: "Your Recordings",
+                feedbackSection: "AI Feedback & Analysis",
+                transcriptionSection: "Speech Transcription",
+                playbackSection: "Recording Playback",
                 noRecordings: "No recordings found",
-                noRecordingsSubtext: "Create your first recording to initialize the neural archive!",
+                noRecordingsSubtext: "Create your first recording to get started!",
                 playRecBtn: "Play",
                 deleteBtn: "Delete",
                 recordingTooShort: "Recording Too Short",
-                recordingTooShortText: "Sorry! The recording was too short for neural analysis. Please try again with a longer speech.",
-                aiAnalyzing: "Neural networks analyzing speech patterns"
+                recordingTooShortText: "Sorry! The recording was too short to generate feedback for. Please try again with a longer speech.",
+                aiAnalyzing: "AI is analyzing your speech"
             },
             es: {
                 title: "Evaluador de Discursos IA",
-                subtitle: "Transforma tus habilidades de habla con análisis neural y retroalimentación IA de vanguardia",
-                sessionText: "Sesión Neural:",
+                subtitle: "Transforma tus habilidades de habla con análisis y retroalimentación impulsados por IA de vanguardia",
+                sessionText: "Tu Sesión:",
                 languageLabel: "Elige tu idioma objetivo:",
                 languageSection: "Selección de Idioma",
-                actionsSection: "Controles Neurales",
+                actionsSection: "Acciones Rápidas",
                 recordBtn: "Grabar Discurso (R)",
-                viewBtn: "Ver Archivo (L)",
+                viewBtn: "Ver Grabaciones (L)",
                 playBtn: "Reproducir Grabación (P)",
                 stopBtn: "Detener Grabación (Enter)",
-                setupSection: "Configuración Neural",
+                setupSection: "Configuración de Grabación",
                 topicLabel: "Tema del Discurso",
                 topicPlaceholder: "¿De qué vas a hablar?",
                 typeLabel: "Tipo de Discurso",
@@ -2376,89 +2376,467 @@ def serve_frontend():
                 repeatLabel: "Este es un segundo intento del mismo tema",
                 startBtn: "Iniciar Grabación (T)",
                 cancelBtn: "Cancelar (B)",
-                recordingText: "Grabación Neural Activa",
-                recordingSubtext: "Habla claramente al micrófono. Las redes neurales están capturando tus patrones de habla.",
+                recordingText: "Grabación en Progreso",
+                recordingSubtext: "Habla claramente al micrófono. Haz clic en detener cuando termines o cancelar para descartar.",
                 cancelActiveBtn: "Cancelar (X)",
-                recordingsSection: "Archivo Neural",
-                feedbackSection: "Análisis Neural IA",
-                transcriptionSection: "Transcripción Neural",
-                playbackSection: "Sistema de Reproducción",
+                recordingsSection: "Tus Grabaciones",
+                feedbackSection: "Análisis y Retroalimentación IA",
+                transcriptionSection: "Transcripción del Discurso",
+                playbackSection: "Reproducción de Grabación",
                 noRecordings: "No se encontraron grabaciones",
-                noRecordingsSubtext: "¡Crea tu primera grabación para inicializar el archivo neural!",
+                noRecordingsSubtext: "¡Crea tu primera grabación para comenzar!",
                 playRecBtn: "Reproducir",
                 deleteBtn: "Eliminar",
                 recordingTooShort: "Grabación Muy Corta",
-                recordingTooShortText: "¡Lo siento! La grabación fue muy corta para análisis neural. Por favor, inténtalo de nuevo con un discurso más largo.",
-                aiAnalyzing: "Redes neurales analizando patrones de habla"
+                recordingTooShortText: "¡Lo siento! La grabación fue muy corta para generar retroalimentación. Por favor, inténtalo de nuevo con un discurso más largo.",
+                aiAnalyzing: "La IA está analizando tu discurso"
             },
             fr: {
                 title: "Évaluateur de Discours IA",
-                subtitle: "Transformez vos compétences oratoires avec une analyse neurale et des commentaires IA de pointe",
-                sessionText: "Session Neurale:",
+                subtitle: "Transformez vos compétences oratoires avec des commentaires et analyses IA de pointe",
+                sessionText: "Votre Session:",
                 languageLabel: "Choisissez votre langue cible:",
                 languageSection: "Sélection de Langue",
-                actionsSection: "Contrôles Neuraux",
+                actionsSection: "Actions Rapides",
                 recordBtn: "Enregistrer Discours (R)",
-                viewBtn: "Voir Archives (L)",
+                viewBtn: "Voir Enregistrements (L)",
                 playBtn: "Lire Enregistrement (P)",
                 stopBtn: "Arrêter Enregistrement (Entrée)",
-                setupSection: "Configuration Neurale",
+                setupSection: "Configuration d'Enregistrement",
                 topicLabel: "Sujet du Discours",
                 topicPlaceholder: "De quoi allez-vous parler?",
                 typeLabel: "Type de Discours",
                 typePlaceholder: "ex., entretien, présentation, débat",
                 repeatLabel: "Ceci est une seconde tentative sur le même sujet",
-                startBtn: "Initier Enregistrement (T)",
+                startBtn: "Démarrer Enregistrement (T)",
                 cancelBtn: "Annuler (B)",
-                recordingText: "Enregistrement Neural Actif",
-                recordingSubtext: "Parlez clairement dans votre microphone. Les réseaux neuraux capturent vos modèles de parole.",
+                recordingText: "Enregistrement en Cours",
+                recordingSubtext: "Parlez clairement dans votre microphone. Cliquez arrêter quand terminé ou annuler pour ignorer.",
                 cancelActiveBtn: "Annuler (X)",
-                recordingsSection: "Archives Neurales",
-                feedbackSection: "Analyse Neurale IA",
-                transcriptionSection: "Transcription Neurale",
-                playbackSection: "Système de Lecture",
+                recordingsSection: "Vos Enregistrements",
+                feedbackSection: "Analyse et Commentaires IA",
+                transcriptionSection: "Transcription du Discours",
+                playbackSection: "Lecture d'Enregistrement",
                 noRecordings: "Aucun enregistrement trouvé",
-                noRecordingsSubtext: "Créez votre premier enregistrement pour initialiser les archives neurales!",
+                noRecordingsSubtext: "Créez votre premier enregistrement pour commencer!",
                 playRecBtn: "Lire",
                 deleteBtn: "Supprimer",
                 recordingTooShort: "Enregistrement Trop Court",
-                recordingTooShortText: "Désolé! L'enregistrement était trop court pour l'analyse neurale. Veuillez réessayer avec un discours plus long.",
-                aiAnalyzing: "Réseaux neuraux analysant les modèles de parole"
+                recordingTooShortText: "Désolé! L'enregistrement était trop court pour générer des commentaires. Veuillez réessayer avec un discours plus long.",
+                aiAnalyzing: "L'IA analyse votre discours"
             },
             de: {
                 title: "KI-Sprach-Evaluator",
-                subtitle: "Verwandeln Sie Ihre Sprechfähigkeiten mit modernster neuraler Analyse und KI-Feedback",
-                sessionText: "Neurale Sitzung:",
+                subtitle: "Verwandeln Sie Ihre Sprechfähigkeiten mit modernsten KI-gestützten Feedback und Analysen",
+                sessionText: "Ihre Sitzung:",
                 languageLabel: "Wählen Sie Ihre Zielsprache:",
                 languageSection: "Sprachauswahl",
-                actionsSection: "Neurale Steuerung",
+                actionsSection: "Schnelle Aktionen",
                 recordBtn: "Rede Aufnehmen (R)",
-                viewBtn: "Archiv Anzeigen (L)",
+                viewBtn: "Aufnahmen Anzeigen (L)",
                 playBtn: "Aufnahme Abspielen (P)",
                 stopBtn: "Aufnahme Stoppen (Enter)",
-                setupSection: "Neurale Konfiguration",
+                setupSection: "Aufnahme-Einrichtung",
                 topicLabel: "Rede-Thema",
                 topicPlaceholder: "Worüber werden Sie sprechen?",
                 typeLabel: "Rede-Typ",
                 typePlaceholder: "z.B., Interview, Präsentation, Debatte",
                 repeatLabel: "Dies ist ein zweiter Versuch zum gleichen Thema",
-                startBtn: "Aufnahme Initiieren (T)",
+                startBtn: "Aufnahme Starten (T)",
                 cancelBtn: "Abbrechen (B)",
-                recordingText: "Neurale Aufnahme Aktiv",
-                recordingSubtext: "Sprechen Sie deutlich in Ihr Mikrofon. Neurale Netzwerke erfassen Ihre Sprachmuster.",
+                recordingText: "Aufnahme läuft",
+                recordingSubtext: "Sprechen Sie deutlich in Ihr Mikrofon. Klicken Sie stoppen wenn fertig oder abbrechen zum Verwerfen.",
                 cancelActiveBtn: "Abbrechen (X)",
-                recordingsSection: "Neurales Archiv",
-                feedbackSection: "KI-Neuralanalyse",
-                transcriptionSection: "Neurale Transkription",
-                playbackSection: "Wiedergabesystem",
+                recordingsSection: "Ihre Aufnahmen",
+                feedbackSection: "KI-Feedback & Analyse",
+                transcriptionSection: "Rede-Transkription",
+                playbackSection: "Aufnahme-Wiedergabe",
                 noRecordings: "Keine Aufnahmen gefunden",
-                noRecordingsSubtext: "Erstellen Sie Ihre erste Aufnahme um das neurale Archiv zu initialisieren!",
+                noRecordingsSubtext: "Erstellen Sie Ihre erste Aufnahme um zu beginnen!",
                 playRecBtn: "Abspielen",
                 deleteBtn: "Löschen",
                 recordingTooShort: "Aufnahme Zu Kurz",
-                recordingTooShortText: "Entschuldigung! Die Aufnahme war zu kurz für neurale Analyse. Bitte versuchen Sie es erneut mit einer längeren Rede.",
-                aiAnalyzing: "Neurale Netzwerke analysieren Sprachmuster"
+                recordingTooShortText: "Entschuldigung! Die Aufnahme war zu kurz um Feedback zu generieren. Bitte versuchen Sie es erneut mit einer längeren Rede.",
+                aiAnalyzing: "KI analysiert Ihre Rede"
+            },
+            it: {
+                title: "Valutatore di Discorsi IA",
+                subtitle: "Trasforma le tue abilità oratorie con feedback e analisi all'avanguardia basati sull'IA",
+                sessionText: "La Tua Sessione:",
+                languageLabel: "Scegli la tua lingua di destinazione:",
+                languageSection: "Selezione Lingua",
+                actionsSection: "Azioni Rapide",
+                recordBtn: "Registra Discorso (R)",
+                viewBtn: "Visualizza Registrazioni (L)",
+                playBtn: "Riproduci Registrazione (P)",
+                stopBtn: "Ferma Registrazione (Invio)",
+                setupSection: "Configurazione Registrazione",
+                topicLabel: "Argomento del Discorso",
+                topicPlaceholder: "Di cosa parlerai?",
+                typeLabel: "Tipo di Discorso",
+                typePlaceholder: "es., intervista, presentazione, dibattito",
+                repeatLabel: "Questo è un secondo tentativo sullo stesso argomento",
+                startBtn: "Inizia Registrazione (T)",
+                cancelBtn: "Annulla (B)",
+                recordingText: "Registrazione in Corso",
+                recordingSubtext: "Parla chiaramente nel microfono. Clicca ferma quando hai finito o annulla per scartare.",
+                cancelActiveBtn: "Annulla (X)",
+                recordingsSection: "Le Tue Registrazioni",
+                feedbackSection: "Feedback e Analisi IA",
+                transcriptionSection: "Trascrizione del Discorso",
+                playbackSection: "Riproduzione Registrazione",
+                noRecordings: "Nessuna registrazione trovata",
+                noRecordingsSubtext: "Crea la tua prima registrazione per iniziare!",
+                playRecBtn: "Riproduci",
+                deleteBtn: "Elimina",
+                recordingTooShort: "Registrazione Troppo Breve",
+                recordingTooShortText: "Spiacente! La registrazione era troppo breve per generare feedback. Riprova con un discorso più lungo.",
+                aiAnalyzing: "L'IA sta analizzando il tuo discorso"
+            },
+            pt: {
+                title: "Avaliador de Discursos IA",
+                subtitle: "Transforme suas habilidades de fala com feedback e análise de ponta baseados em IA",
+                sessionText: "Sua Sessão:",
+                languageLabel: "Escolha seu idioma alvo:",
+                languageSection: "Seleção de Idioma",
+                actionsSection: "Ações Rápidas",
+                recordBtn: "Gravar Discurso (R)",
+                viewBtn: "Ver Gravações (L)",
+                playBtn: "Reproduzir Gravação (P)",
+                stopBtn: "Parar Gravação (Enter)",
+                setupSection: "Configuração de Gravação",
+                topicLabel: "Tópico do Discurso",
+                topicPlaceholder: "Sobre o que você vai falar?",
+                typeLabel: "Tipo de Discurso",
+                typePlaceholder: "ex., entrevista, apresentação, debate",
+                repeatLabel: "Esta é uma segunda tentativa no mesmo tópico",
+                startBtn: "Iniciar Gravação (T)",
+                cancelBtn: "Cancelar (B)",
+                recordingText: "Gravação em Progresso",
+                recordingSubtext: "Fale claramente no microfone. Clique parar quando terminar ou cancelar para descartar.",
+                cancelActiveBtn: "Cancelar (X)",
+                recordingsSection: "Suas Gravações",
+                feedbackSection: "Feedback e Análise IA",
+                transcriptionSection: "Transcrição do Discurso",
+                playbackSection: "Reprodução da Gravação",
+                noRecordings: "Nenhuma gravação encontrada",
+                noRecordingsSubtext: "Crie sua primeira gravação para começar!",
+                playRecBtn: "Reproduzir",
+                deleteBtn: "Excluir",
+                recordingTooShort: "Gravação Muito Curta",
+                recordingTooShortText: "Desculpe! A gravação foi muito curta para gerar feedback. Tente novamente com um discurso mais longo.",
+                aiAnalyzing: "A IA está analisando seu discurso"
+            },
+            ru: {
+                title: "ИИ Оценщик Речи",
+                subtitle: "Преобразуйте свои навыки речи с помощью передовой обратной связи и анализа на основе ИИ",
+                sessionText: "Ваша Сессия:",
+                languageLabel: "Выберите целевой язык:",
+                languageSection: "Выбор Языка",
+                actionsSection: "Быстрые Действия",
+                recordBtn: "Записать Речь (R)",
+                viewBtn: "Просмотр Записей (L)",
+                playBtn: "Воспроизвести Запись (P)",
+                stopBtn: "Остановить Запись (Enter)",
+                setupSection: "Настройка Записи",
+                topicLabel: "Тема Речи",
+                topicPlaceholder: "О чём вы будете говорить?",
+                typeLabel: "Тип Речи",
+                typePlaceholder: "напр., интервью, презентация, дебаты",
+                repeatLabel: "Это вторая попытка на ту же тему",
+                startBtn: "Начать Запись (T)",
+                cancelBtn: "Отмена (B)",
+                recordingText: "Запись в Процессе",
+                recordingSubtext: "Говорите чётко в микрофон. Нажмите стоп когда закончите или отмена для отмены.",
+                cancelActiveBtn: "Отмена (X)",
+                recordingsSection: "Ваши Записи",
+                feedbackSection: "ИИ Обратная Связь и Анализ",
+                transcriptionSection: "Транскрипция Речи",
+                playbackSection: "Воспроизведение Записи",
+                noRecordings: "Записи не найдены",
+                noRecordingsSubtext: "Создайте первую запись для начала!",
+                playRecBtn: "Воспроизвести",
+                deleteBtn: "Удалить",
+                recordingTooShort: "Запись Слишком Короткая",
+                recordingTooShortText: "Извините! Запись была слишком короткой для генерации обратной связи. Попробуйте снова с более длинной речью.",
+                aiAnalyzing: "ИИ анализирует вашу речь"
+            },
+             ko: {
+                title: "AI 스피치 평가기",
+                subtitle: "최첨단 AI 기반 피드백과 분석으로 말하기 실력을 향상시키세요",
+                sessionText: "세션:",
+                languageLabel: "목표 언어를 선택하세요:",
+                languageSection: "언어 선택",
+                actionsSection: "빠른 작업",
+                recordBtn: "스피치 녹음 (R)",
+                viewBtn: "녹음 보기 (L)",
+                playBtn: "녹음 재생 (P)",
+                stopBtn: "녹음 중지 (Enter)",
+                setupSection: "녹음 설정",
+                topicLabel: "스피치 주제",
+                topicPlaceholder: "무엇에 대해 말씀하실 건가요?",
+                typeLabel: "스피치 유형",
+                typePlaceholder: "예: 면접, 발표, 토론",
+                repeatLabel: "같은 주제에 대한 재시도입니다",
+                startBtn: "녹음 시작 (T)",
+                cancelBtn: "취소 (B)",
+                recordingText: "녹음 진행 중",
+                recordingSubtext: "마이크에 대고 명확하게 말하세요. 완료되면 중지를 클릭하거나 취소를 클릭하여 삭제하세요.",
+                cancelActiveBtn: "취소 (X)",
+                recordingsSection: "녹음 목록",
+                feedbackSection: "AI 피드백 및 분석",
+                transcriptionSection: "스피치 전사",
+                playbackSection: "녹음 재생",
+                noRecordings: "녹음을 찾을 수 없습니다",
+                noRecordingsSubtext: "첫 번째 녹음을 만들어 시작하세요!",
+                playRecBtn: "재생",
+                deleteBtn: "삭제",
+                recordingTooShort: "녹음이 너무 짧습니다",
+                recordingTooShortText: "죄송합니다! 녹음이 너무 짧아서 피드백을 생성할 수 없습니다. 더 긴 스피치로 다시 시도해 주세요.",
+                aiAnalyzing: "AI가 당신의 스피치를 분석하고 있습니다"
+            },
+            zh: {
+                title: "AI语音评估器",
+                subtitle: "用尖端的AI驱动反馈和分析改变您的演讲技能",
+                sessionText: "您的会话：",
+                languageLabel: "选择您的目标语言：",
+                languageSection: "语言选择",
+                actionsSection: "快速操作",
+                recordBtn: "录制演讲 (R)",
+                viewBtn: "查看录音 (L)",
+                playBtn: "播放录音 (P)",
+                stopBtn: "停止录制 (Enter)",
+                setupSection: "录制设置",
+                topicLabel: "演讲主题",
+                topicPlaceholder: "您将谈论什么？",
+                typeLabel: "演讲类型",
+                typePlaceholder: "例如：面试、演示、辩论",
+                repeatLabel: "这是同一主题的重复尝试",
+                startBtn: "开始录制 (T)",
+                cancelBtn: "取消 (B)",
+                recordingText: "录制进行中",
+                recordingSubtext: "清楚地对着麦克风说话。完成时点击停止或点击取消放弃。",
+                cancelActiveBtn: "取消 (X)",
+                recordingsSection: "您的录音",
+                feedbackSection: "AI反馈与分析",
+                transcriptionSection: "演讲转录",
+                playbackSection: "录音播放",
+                noRecordings: "未找到录音",
+                noRecordingsSubtext: "创建您的第一个录音开始吧！",
+                playRecBtn: "播放",
+                deleteBtn: "删除",
+                recordingTooShort: "录音太短",
+                recordingTooShortText: "抱歉！录音太短无法生成反馈。请用更长的演讲重试。",
+                aiAnalyzing: "AI正在分析您的演讲"
+            },
+            ja: {
+                title: "AIスピーチ評価器",
+                subtitle: "最先端のAI駆動フィードバックと分析でスピーキングスキルを変革",
+                sessionText: "あなたのセッション：",
+                languageLabel: "対象言語を選択：",
+                languageSection: "言語選択",
+                actionsSection: "クイックアクション",
+                recordBtn: "スピーチ録音 (R)",
+                viewBtn: "録音を表示 (L)",
+                playBtn: "録音再生 (P)",
+                stopBtn: "録音停止 (Enter)",
+                setupSection: "録音設定",
+                topicLabel: "スピーチトピック",
+                topicPlaceholder: "何について話しますか？",
+                typeLabel: "スピーチタイプ",
+                typePlaceholder: "例：面接、プレゼンテーション、討論",
+                repeatLabel: "これは同じトピックの再試行です",
+                startBtn: "録音開始 (T)",
+                cancelBtn: "キャンセル (B)",
+                recordingText: "録音中",
+                recordingSubtext: "マイクに向かってはっきりと話してください。終了時は停止をクリック、破棄する場合はキャンセルをクリック。",
+                cancelActiveBtn: "キャンセル (X)",
+                recordingsSection: "あなたの録音",
+                feedbackSection: "AIフィードバック＆分析",
+                transcriptionSection: "スピーチ転写",
+                playbackSection: "録音再生",
+                noRecordings: "録音が見つかりません",
+                noRecordingsSubtext: "最初の録音を作成して始めましょう！",
+                playRecBtn: "再生",
+                deleteBtn: "削除",
+                recordingTooShort: "録音が短すぎます",
+                recordingTooShortText: "申し訳ありません！録音が短すぎてフィードバックを生成できません。より長いスピーチで再試行してください。",
+                aiAnalyzing: "AIがあなたのスピーチを分析しています"
+            },
+            ar: {
+                title: "مُقيم الخطابات بالذكاء الاصطناعي",
+                subtitle: "حول مهاراتك في التحدث مع تحليل وتغذية راجعة متطورة مدعومة بالذكاء الاصطناعي",
+                sessionText: "جلستك:",
+                languageLabel: "اختر لغتك المستهدفة:",
+                languageSection: "اختيار اللغة",
+                actionsSection: "إجراءات سريعة",
+                recordBtn: "تسجيل خطاب (R)",
+                viewBtn: "عرض التسجيلات (L)",
+                playBtn: "تشغيل التسجيل (P)",
+                stopBtn: "إيقاف التسجيل (Enter)",
+                setupSection: "إعداد التسجيل",
+                topicLabel: "موضوع الخطاب",
+                topicPlaceholder: "عن ماذا ستتحدث؟",
+                typeLabel: "نوع الخطاب",
+                typePlaceholder: "مثال: مقابلة، عرض تقديمي، مناقشة",
+                repeatLabel: "هذه محاولة ثانية لنفس الموضوع",
+                startBtn: "بدء التسجيل (T)",
+                cancelBtn: "إلغاء (B)",
+                recordingText: "التسجيل قيد التقدم",
+                recordingSubtext: "تحدث بوضوح في الميكروفون. انقر إيقاف عند الانتهاء أو إلغاء للتجاهل.",
+                cancelActiveBtn: "إلغاء (X)",
+                recordingsSection: "تسجيلاتك",
+                feedbackSection: "تغذية راجعة وتحليل بالذكاء الاصطناعي",
+                transcriptionSection: "نسخ الخطاب",
+                playbackSection: "تشغيل التسجيل",
+                noRecordings: "لم يتم العثور على تسجيلات",
+                noRecordingsSubtext: "أنشئ تسجيلك الأول للبدء!",
+                playRecBtn: "تشغيل",
+                deleteBtn: "حذف",
+                recordingTooShort: "التسجيل قصير جداً",
+                recordingTooShortText: "عذراً! كان التسجيل قصيراً جداً لإنتاج تغذية راجعة. حاول مرة أخرى بخطاب أطول.",
+                aiAnalyzing: "الذكاء الاصطناعي يحلل خطابك"
+            },
+            hi: {
+                title: "एआई भाषण मूल्यांकनकर्ता",
+                subtitle: "अत्याधुनिक एआई-संचालित फीडबैक और विश्लेषण के साथ अपने बोलने के कौशल को बदलें",
+                sessionText: "आपका सत्र:",
+                languageLabel: "अपनी लक्षित भाषा चुनें:",
+                languageSection: "भाषा चयन",
+                actionsSection: "त्वरित कार्य",
+                recordBtn: "भाषण रिकॉर्ड करें (R)",
+                viewBtn: "रिकॉर्डिंग देखें (L)",
+                playBtn: "रिकॉर्डिंग चलाएं (P)",
+                stopBtn: "रिकॉर्डिंग रोकें (Enter)",
+                setupSection: "रिकॉर्डिंग सेटअप",
+                topicLabel: "भाषण विषय",
+                topicPlaceholder: "आप किस बारे में बात करेंगे?",
+                typeLabel: "भाषण प्रकार",
+                typePlaceholder: "जैसे: साक्षात्कार, प्रस्तुति, बहस",
+                repeatLabel: "यह उसी विषय पर दूसरी कोशिश है",
+                startBtn: "रिकॉर्डिंग शुरू करें (T)",
+                cancelBtn: "रद्द करें (B)",
+                recordingText: "रिकॉर्डिंग प्रगति में",
+                recordingSubtext: "माइक्रोफोन में स्पष्ट रूप से बोलें। समाप्त होने पर रोकें क्लिक करें या रद्द करने के लिए रद्द करें।",
+                cancelActiveBtn: "रद्द करें (X)",
+                recordingsSection: "आपकी रिकॉर्डिंग",
+                feedbackSection: "एआई फीडबैक और विश्लेषण",
+                transcriptionSection: "भाषण प्रतिलेखन",
+                playbackSection: "रिकॉर्डिंग प्लेबैक",
+                noRecordings: "कोई रिकॉर्डिंग नहीं मिली",
+                noRecordingsSubtext: "शुरू करने के लिए अपनी पहली रिकॉर्डिंग बनाएं!",
+                playRecBtn: "चलाएं",
+                deleteBtn: "हटाएं",
+                recordingTooShort: "रिकॉर्डिंग बहुत छोटी",
+                recordingTooShortText: "माफ़ करें! रिकॉर्डिंग फीडबैक उत्पन्न करने के लिए बहुत छोटी थी। कृपया लंबे भाषण के साथ फिर से कोशिश करें।",
+                aiAnalyzing: "एआई आपके भाषण का विश्लेषण कर रहा है"
+            },
+            tr: {
+                title: "AI Konuşma Değerlendirici",
+                subtitle: "En son AI destekli geri bildirim ve analiz ile konuşma becerilerinizi dönüştürün",
+                sessionText: "Oturumunuz:",
+                languageLabel: "Hedef dilinizi seçin:",
+                languageSection: "Dil Seçimi",
+                actionsSection: "Hızlı İşlemler",
+                recordBtn: "Konuşma Kaydet (R)",
+                viewBtn: "Kayıtları Görüntüle (L)",
+                playBtn: "Kaydı Oynat (P)",
+                stopBtn: "Kaydı Durdur (Enter)",
+                setupSection: "Kayıt Kurulumu",
+                topicLabel: "Konuşma Konusu",
+                topicPlaceholder: "Ne hakkında konuşacaksınız?",
+                typeLabel: "Konuşma Türü",
+                typePlaceholder: "örn., mülakat, sunum, tartışma",
+                repeatLabel: "Bu aynı konu üzerinde ikinci bir deneme",
+                startBtn: "Kaydı Başlat (T)",
+                cancelBtn: "İptal (B)",
+                recordingText: "Kayıt Devam Ediyor",
+                recordingSubtext: "Mikrofona açık bir şekilde konuşun. Bitirdiğinde durdur'a veya atmak için iptal'e tıklayın.",
+                cancelActiveBtn: "İptal (X)",
+                recordingsSection: "Kayıtlarınız",
+                feedbackSection: "AI Geri Bildirim ve Analiz",
+                transcriptionSection: "Konuşma Transkripsiyonu",
+                playbackSection: "Kayıt Oynatma",
+                noRecordings: "Kayıt bulunamadı",
+                noRecordingsSubtext: "Başlamak için ilk kaydınızı oluşturun!",
+                playRecBtn: "Oynat",
+                deleteBtn: "Sil",
+                recordingTooShort: "Kayıt Çok Kısa",
+                recordingTooShortText: "Üzgünüz! Kayıt geri bildirim üretmek için çok kısaydı. Lütfen daha uzun bir konuşma ile tekrar deneyin.",
+                aiAnalyzing: "AI konuşmanızı analiz ediyor"
+            },
+            nl: {
+                title: "AI Spraak Evaluator",
+                subtitle: "Transformeer je spreekvaardigheden met geavanceerde AI-aangedreven feedback en analyse",
+                sessionText: "Je Sessie:",
+                languageLabel: "Kies je doeltaal:",
+                languageSection: "Taalselectie",
+                actionsSection: "Snelle Acties",
+                recordBtn: "Spraak Opnemen (R)",
+                viewBtn: "Opnames Bekijken (L)",
+                playBtn: "Opname Afspelen (P)",
+                stopBtn: "Opname Stoppen (Enter)",
+                setupSection: "Opname Instellingen",
+                topicLabel: "Spraak Onderwerp",
+                topicPlaceholder: "Waar ga je over spreken?",
+                typeLabel: "Spraak Type",
+                typePlaceholder: "bijv., interview, presentatie, debat",
+                repeatLabel: "Dit is een tweede poging op hetzelfde onderwerp",
+                startBtn: "Opname Starten (T)",
+                cancelBtn: "Annuleren (B)",
+                recordingText: "Opname Bezig",
+                recordingSubtext: "Spreek duidelijk in je microfoon. Klik stop wanneer klaar of annuleren om te verwijderen.",
+                cancelActiveBtn: "Annuleren (X)",
+                recordingsSection: "Je Opnames",
+                feedbackSection: "AI Feedback & Analyse",
+                transcriptionSection: "Spraak Transcriptie",
+                playbackSection: "Opname Afspelen",
+                noRecordings: "Geen opnames gevonden",
+                noRecordingsSubtext: "Maak je eerste opname om te beginnen!",
+                playRecBtn: "Afspelen",
+                deleteBtn: "Verwijderen",
+                recordingTooShort: "Opname Te Kort",
+                recordingTooShortText: "Sorry! De opname was te kort om feedback te genereren. Probeer opnieuw met een langere spraak.",
+                aiAnalyzing: "AI analyseert je spraak"
+            },
+            bn: {
+                title: "এআই বক্তৃতা মূল্যায়নকারী",
+                subtitle: "অত্যাধুনিক এআই-চালিত ফিডব্যাক এবং বিশ্লেষণের মাধ্যমে আপনার কথা বলার দক্ষতা পরিবর্তন করুন",
+                sessionText: "আপনার সেশন:",
+                languageLabel: "আপনার লক্ষ্য ভাষা বেছে নিন:",
+                languageSection: "ভাষা নির্বাচন",
+                actionsSection: "দ্রুত কর্ম",
+                recordBtn: "বক্তৃতা রেকর্ড করুন (R)",
+                viewBtn: "রেকর্ডিং দেখুন (L)",
+                playBtn: "রেকর্ডিং চালান (P)",
+                stopBtn: "রেকর্ডিং বন্ধ করুন (Enter)",
+                setupSection: "রেকর্ডিং সেটআপ",
+                topicLabel: "বক্তৃতার বিষয়",
+                topicPlaceholder: "আপনি কি নিয়ে কথা বলবেন?",
+                typeLabel: "বক্তৃতার ধরন",
+                typePlaceholder: "যেমন: সাক্ষাৎকার, উপস্থাপনা, বিতর্ক",
+                repeatLabel: "এটি একই বিষয়ে দ্বিতীয় চেষ্টা",
+                startBtn: "রেকর্ডিং শুরু করুন (T)",
+                cancelBtn: "বাতিল (B)",
+                recordingText: "রেকর্ডিং চলছে",
+                recordingSubtext: "মাইক্রোফোনে স্পষ্ট করে কথা বলুন। শেষ হলে বন্ধ ক্লিক করুন বা বাতিল করতে বাতিল ক্লিক করুন।",
+                cancelActiveBtn: "বাতিল (X)",
+                recordingsSection: "আপনার রেকর্ডিং",
+                feedbackSection: "এআই ফিডব্যাক এবং বিশ্লেষণ",
+                transcriptionSection: "বক্তৃতার প্রতিলিপি",
+                playbackSection: "রেকর্ডিং প্লেব্যাক",
+                noRecordings: "কোন রেকর্ডিং পাওয়া যায়নি",
+                noRecordingsSubtext: "শুরু করতে আপনার প্রথম রেকর্ডিং তৈরি করুন!",
+                playRecBtn: "চালান",
+                deleteBtn: "মুছুন",
+                recordingTooShort: "রেকর্ডিং খুব ছোট",
+                recordingTooShortText: "দুঃখিত! রেকর্ডিংটি ফিডব্যাক তৈরি করার জন্য খুব ছোট ছিল। অনুগ্রহ করে আরও দীর্ঘ বক্তৃতা দিয়ে আবার চেষ্টা করুন।",
+                aiAnalyzing: "এআই আপনার বক্তৃতা বিশ্লেষণ করছে"
             }
+
+
+
+
         };
 
         document.getElementById('languageSelect').addEventListener('change', function() {
@@ -2556,7 +2934,7 @@ def serve_frontend():
             try {
                 const result = await apiCall('/health');
             } catch (error) {
-                showStatus('❌ Cannot connect to neural network. Please start the API server.', 'error');
+                showStatus('❌ Cannot connect. Please start the API server.', 'error');
             }
         }
 
@@ -2645,12 +3023,12 @@ def serve_frontend():
 
         function startRecording() {
             if (isRecording) {
-                showStatus('Neural recording already active!', 'error');
+                showStatus('Recording already active!', 'error');
                 return;
             }
 
             if (!sessionId) {
-                showStatus('Neural session not initialized!', 'error');
+                showStatus('Session not initialized!', 'error');
                 return;
             }
 
@@ -2702,7 +3080,7 @@ def serve_frontend():
 
         function cancelActiveRecording() {
             if (!isRecording || !mediaRecorder) {
-                showStatus('No neural recording in progress', 'error');
+                showStatus('No recording in progress', 'error');
                 return;
             }
 
@@ -2734,7 +3112,7 @@ def serve_frontend():
             document.getElementById('transcriptionSection').classList.add('hidden');
             document.getElementById('audioControls').classList.add('hidden');
             
-            showStatus('🚫 Neural recording cancelled - no analysis performed', 'info');
+            showStatus('🚫 Recording cancelled - no analysis performed', 'info');
         }
 
         function audioBufferToWav(buffer) {
@@ -2782,12 +3160,12 @@ def serve_frontend():
             const speechType = document.getElementById('speechTypeInput').value.trim();
             
             if (!topic || !speechType) {
-                showStatus('Please configure both topic and speech type for neural analysis', 'error');
+                showStatus('Please configure both topic and speech type for analysis', 'error');
                 return;
             }
 
             if (!sessionId) {
-                showStatus('Neural session not initialized!', 'error');
+                showStatus('Session not initialized!', 'error');
                 return;
             }
 
@@ -2829,7 +3207,7 @@ def serve_frontend():
 
                 mediaRecorder.onerror = function(event) {
                     console.error('MediaRecorder error:', event.error);
-                    showStatus('Neural recording error: ' + event.error.message, 'error');
+                    showStatus('Recording error: ' + event.error.message, 'error');
                 };
 
                 mediaRecorder.start(1000);
@@ -2840,17 +3218,17 @@ def serve_frontend():
                 document.getElementById('recordBtn').classList.add('recording');
                 document.getElementById('stopBtn').classList.remove('hidden');
                 
-                showStatus('🎤 Neural recording initiated! Speech patterns being captured...', 'info', 0);
+                showStatus('🎤 Recording initiated! Speech patterns being captured...', 'info', 0);
 
             } catch (error) {
                 console.error('Error starting recording:', error);
-                showStatus('❌ Failed to initiate neural recording: ' + error.message, 'error');
+                showStatus('❌ Failed to initiate recording: ' + error.message, 'error');
             }
         }
 
         function stopRecording() {
             if (!isRecording || !mediaRecorder) {
-                showStatus('No neural recording in progress', 'error');
+                showStatus('No recording in progress', 'error');
                 return;
             }
 
@@ -2866,12 +3244,12 @@ def serve_frontend():
             document.getElementById('recordBtn').classList.remove('recording');
             document.getElementById('stopBtn').classList.add('hidden');
             
-            showStatus('⏹️ Neural recording completed. Initializing analysis...', 'info', 0);
+            showStatus('⏹️ Recording completed. Initializing analysis...', 'info', 0);
         }
 
         function cancelRecording() {
             document.getElementById('recordingSetup').classList.remove('active');
-            showStatus('Neural recording configuration cancelled', 'info');
+            showStatus('Recording configuration cancelled', 'info');
         }
 
         async function processRecording() {
@@ -2881,20 +3259,20 @@ def serve_frontend():
             }
 
             if (!sessionId) {
-                showStatus('Neural session not initialized!', 'error');
+                showStatus('Session not initialized!', 'error');
                 return;
             }
 
             try {
-                showStatus('🔄 Processing neural data...', 'info', 0);
+                showStatus('🔄 Processing data...', 'info', 0);
 
                 if (recordedBlob.size === 0) {
-                    showStatus('❌ Recording is empty. Please try neural recording again.', 'error');
+                    showStatus('❌ Recording is empty. Please try recording again.', 'error');
                     return;
                 }
 
                 if (recordedBlob.size < 1000) {
-                    showStatus('❌ Recording too short for neural analysis. Please record for at least a few seconds.', 'error');
+                    showStatus('❌ Recording too short for analysis. Please record for at least a few seconds.', 'error');
                     return;
                 }
 
@@ -2925,7 +3303,7 @@ def serve_frontend():
                     is_repeat: isRepeat
                 };
 
-                showStatus('📤 Sending to neural networks for analysis...', 'info', 0);
+                showStatus('📤 Sending to AI for analysis...', 'info', 0);
                 
                 const response = await fetch(API_BASE + '/record', {
                     method: 'POST',
@@ -2946,14 +3324,14 @@ def serve_frontend():
                 if (result.success) {
                     displayInitialResults(result.result);
                     startFeedbackStream(result.result.stream_url);
-                    showStatus('✅ Neural analysis successfully initiated!', 'success');
+                    showStatus('✅ Analysis successfully initiated!', 'success');
                 } else {
-                    showStatus('❌ Neural processing failed: ' + result.error, 'error');
+                    showStatus('❌ Processing failed: ' + result.error, 'error');
                 }
 
             } catch (error) {
                 console.error('Processing error:', error);
-                showStatus('❌ Failed to process neural data: ' + error.message, 'error');
+                showStatus('❌ Failed to process data: ' + error.message, 'error');
             }
         }
 
@@ -2994,7 +3372,7 @@ def serve_frontend():
                     
                     if (data.error) {
                         console.error('Stream error:', data.error);
-                        showStatus('❌ Neural analysis failed: ' + data.error, 'error');
+                        showStatus('❌ Analysis failed: ' + data.error, 'error');
                         feedbackEventSource.close();
                         return;
                     }
@@ -3018,7 +3396,7 @@ def serve_frontend():
                     }
                     
                     if (data.type === 'complete') {
-                        console.log('Neural analysis completed');
+                        console.log('Analysis completed');
                         feedbackEventSource.close();
                         feedbackEventSource = null;
                         
@@ -3039,7 +3417,7 @@ def serve_frontend():
 
         async function listRecordings() {
             try {
-                showStatus('📋 Loading neural archive...', 'info');
+                showStatus('📋 Loading recordings...', 'info');
                 const result = await apiCall('/recordings');
                 
                 if (result.success) {
@@ -3048,12 +3426,12 @@ def serve_frontend():
                     document.getElementById('recordingsList').classList.add('active');
                     document.getElementById('recordingSetup').classList.remove('active');
                     document.getElementById('feedbackSection').classList.remove('active');
-                    showStatus(recordings.length === 0 ? '📁 Neural archive empty' : 'Found ' + recordings.length + ' neural recordings', 'info');
+                    showStatus(recordings.length === 0 ? '📁 Recording list is empty' : 'Found ' + recordings.length + ' recordings', 'info');
                 } else {
                     recordings = [];
                     displayRecordingsList();
                     document.getElementById('recordingsList').classList.add('active');
-                    showStatus('📁 Neural archive not yet initialized', 'info');
+                    showStatus('📁 Recording list not yet initialized', 'info');
                 }
             } catch (error) {
                 recordings = [];
@@ -3061,7 +3439,7 @@ def serve_frontend():
                 document.getElementById('recordingsList').classList.add('active');
                 document.getElementById('recordingSetup').classList.remove('active');
                 document.getElementById('feedbackSection').classList.remove('active');
-                showStatus('📁 Neural archive not yet initialized', 'info');
+                showStatus('📁 Recording list not yet initialized', 'info');
             }
         }
 
@@ -3084,7 +3462,7 @@ def serve_frontend():
 
         async function playRecording(filename) {
             try {
-                showStatus('▶️ Loading neural recording: ' + filename + '...', 'info');
+                showStatus('▶️ Loading recording: ' + filename + '...', 'info');
                 const response = await fetch(API_BASE + '/recordings/' + filename, {
                     headers: {
                         'Session-ID': sessionId
@@ -3098,23 +3476,23 @@ def serve_frontend():
                 document.getElementById('audioPlayer').src = audioURL;
                 document.getElementById('audioControls').classList.remove('hidden');
                 document.getElementById('audioPlayer').play();
-                showStatus('🔊 Playing neural recording: ' + filename, 'success');
+                showStatus('🔊 Playing recording: ' + filename, 'success');
             } catch (error) {
-                showStatus('❌ Failed to play neural recording', 'error');
+                showStatus('❌ Failed to play recording', 'error');
             }
         }
 
         async function deleteRecording(filename) {
-            if (!confirm('Are you sure you want to delete "' + filename + '" from the neural archive?')) {
+            if (!confirm('Are you sure you want to delete "' + filename + '" from the recording list?')) {
                 return;
             }
             try {
                 const result = await apiCall('/recordings/' + filename, { method: 'DELETE' });
                 if (result.success) {
-                    showStatus('✅ Deleted from neural archive: ' + filename, 'success');
+                    showStatus('✅ Deleted from recording list: ' + filename, 'success');
                     listRecordings();
                 } else {
-                    showStatus('❌ Failed to delete from neural archive', 'error');
+                    showStatus('❌ Failed to delete from recording list', 'error');
                 }
             } catch (error) {
                 console.error('Error deleting recording:', error);
@@ -3141,7 +3519,7 @@ def serve_frontend():
 </html>
 """
     else:
-        return "Neural API is running. Frontend at http://localhost:3000"
+        return "PI is running. Frontend at http://localhost:3000"
 
 @app.route('/api/session', methods=['DELETE'])
 def clear_session():
