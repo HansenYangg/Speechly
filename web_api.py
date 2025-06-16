@@ -1237,7 +1237,7 @@ def serve_frontend():
             border: 2px solid var(--glass-border);
             border-radius: 20px;
             font-size: 16px;
-            color: var(--text-primary);
+            color: #4a5568;
             cursor: pointer;
             transition: var(--transition-smooth);
             appearance: none;
@@ -1806,7 +1806,7 @@ def serve_frontend():
             border-radius: 20px;
             margin-top: 25px;
             backdrop-filter: blur(15px);
-            color: #2d3748;
+            color: #4a5568;
             line-height: 1.7;
             box-shadow: 
                 0 15px 35px rgba(0, 0, 0, 0.2),
