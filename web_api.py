@@ -587,37 +587,41 @@ def stream_feedback(session_id, filename):
                 language_instruction = f"Try to tailor the feedback based off the context of the user presentation. Make sure to provide ALL feedback in {language_name}."
                 
                 MIN_RECORDING_DURATION = 5
-                SHORT_RECORDING_THRESHOLD = 30
+                SHORT_RECORDING_THRESHOLD = 20
                 
                 if MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
                     prompt = (
-                        f"The following speech is pretty short and may lack sufficient content. "
-                        f"Please evaluate and critique it given the following topic and type of the speech. "
-                        f"Give appropriate feedback accordingly based on these:\n\n"
+                        f"You are a helpful assistant with the purpose of grading user presentations.\n"
+                        f"The following presentation is pretty short and may lack sufficient content, so grade it with that in mind, and not necessarily in a negative way.\n"
+                        f"Please give appropriate feedback accordingly based on the following topic, type, and transcription of the user's presentation:\n\n"
                         f"Speech topic: '{topic}'\n"
                         f"Speech type: {speech_type}\n"
                         f"Transcription: '{transcription_text}'\n\n"
                         f"{repeat_context}\n"
-                        f"Please grade out of a total 100 points and give constructive feedback as if you were a teacher/college professor, and start it off by listing what the speech topic/type is before diving into feedback.\n"
-                        f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
-                        f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
-                        f"Note good things they did and things they can improve on. Try to give an amount of feedback relatively proportional to the length of the speech (longer ones should generally have more feedback), but don't force it.\n"
+                        f"Please grade the user presentation out of a totaled 100 points and give constructive feedback as if you WERE a teacher/college professor. Before starting, please clearly indicate the type and topic of the presentation, and give a very quick (1-2 sentence summary) of it before diving into feedback.\n"
+                        f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points. Don't be afraid to give scores close to 0 if the presentation contains close to no content.\n"
+                        f"Don't always have scores in increments of 5, use more varied/granular scores, but still scores that truly reflect the quality of the presentation.\n"
+                        f"Note good things they did and things they can improve on. Try to give an amount of feedback relatively proportional to the length of the speech (longer ones should generally have more feedback), but don't force it. Feel free to provide what you think is suitable for the given presentation.\n"
                         f"Please put adequate spacing. There MUST be a clear separating --- between each chunk of the 5 listed categories that you are to give feedback on.\n" 
+                        f"Be friendly and encouraging, but not too much to the point where your feedback is no longer truthful. Still be honest about your evaluation, but in a semi-gentle way.\n"
+                        f"Lastly, be dynamic in your responses. Don't give stereotypical, boring advice that they can find anywhere online. Be unique very engaging with your response, ensuring it is still full, detailed, and encapsulates helpful material that will truly help the user improve their verbal presenting skills."
                         f"{language_instruction}"
                     )
                 else:
                     prompt = (
-                        f"Please evaluate and critique it given the following topic and type of the speech. "
-                        f"Give appropriate feedback accordingly based on this information about the presentation:\n\n"
+                        f"You are a helpful assistant with the purpose of grading user presentations.\n"
+                        f"Please give appropriate feedback accordingly based on the following topic, type, and transcription of the user's presentation:\n\n"
                         f"Speech topic: '{topic}'\n"
                         f"Speech type: {speech_type}\n"
                         f"Transcription: '{transcription_text}'\n\n"
                         f"{repeat_context}\n"
-                        f"Please grade out of a total 100 points and give constructive feedback as if you were a teacher/college professor, and start it off by listing what the speech topic/type is before diving into feedback.\n"
-                        f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points.\n"
-                        f"Don't always have scores in increments of 5, use more varied/granular scores. \n"
-                        f"Note good things they did and things they can improve on. Try to give an amount of feedback relatively proportional to the length of the speech (longer ones should generally have more feedback), but don't force it.\n"
+                        f"Please grade the user presentation out of a totaled 100 points and give constructive feedback as if you WERE a teacher/college professor. Before starting, please clearly indicate the type and topic of the presentation, and give a very quick (1-2 sentence summary) of it before diving into feedback.\n"
+                        f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points. Don't be afraid to give scores close to 0 if the presentation contains close to no content.\n"
+                        f"Don't always have scores in increments of 5, use more varied/granular scores, but still scores that truly reflect the quality of the presentation.\n"
+                        f"Note good things they did and things they can improve on. Try to give an amount of feedback relatively proportional to the length of the speech (longer ones should generally have more feedback), but don't force it. Feel free to provide what you think is suitable for the given presentation.\n"
                         f"Please put adequate spacing. There MUST be a clear separating --- between each chunk of the 5 listed categories that you are to give feedback on.\n" 
+                        f"Be friendly and encouraging, but not too much to the point where your feedback is no longer truthful. Still be honest about your evaluation, but in a semi-gentle way.\n"
+                        f"Lastly, be dynamic in your responses. Don't give stereotypical, boring advice that they can find anywhere online. Be unique very engaging with your response, ensuring it is still full, detailed, and encapsulates helpful material that will truly help the user improve their verbal presenting skills."
                         f"{language_instruction}"
                     )
                 
