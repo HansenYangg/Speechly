@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 import os
+import sys
 import json
 import tempfile
 import uuid
@@ -11,21 +13,34 @@ from dotenv import load_dotenv
 import time
 from datetime import datetime
 
+# Set UTF-8 encoding for Windows console
+if sys.platform == 'win32':
+    import codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+
+# Check if production mode is forced via environment variable
+FORCE_PRODUCTION = os.getenv('FORCE_PRODUCTION', '').lower() in ('true', '1', 'yes')
+
+# Define MockLogger for production mode
+class MockLogger:
+    def info(self, msg): print(f"INFO: {msg}")
+    def error(self, msg, **kwargs): print(f"ERROR: {msg}")
+
 try:
     from speech_evaluator import SpeechEvaluator
     from config_validator import ConfigValidator
     from exceptions import *
     from logger import setup_logger
     from validator import Validator
-    PRODUCTION_MODE = False
-    print("🏠 Development mode: All modules loaded")
+    PRODUCTION_MODE = FORCE_PRODUCTION
+    if FORCE_PRODUCTION:
+        print("🌐 Forced production mode via FORCE_PRODUCTION env var")
+    else:
+        print("🏠 Development mode: All modules loaded")
 except ImportError as e:
     PRODUCTION_MODE = True
     print(f"🌐 Production mode: {e}")
-    
-    class MockLogger:
-        def info(self, msg): print(f"INFO: {msg}")
-        def error(self, msg, **kwargs): print(f"ERROR: {msg}")
     
     def setup_logger(name):
         return MockLogger()
@@ -63,9 +78,9 @@ def generate_session_filename(session_id, topic):
 def save_session_recording(session_id, filename, audio_data, topic, speech_type, transcription, feedback):
     if not session_id:
         return False
-    
+
     ensure_session_exists(session_id)
-    
+
     recording_info = {
         'filename': filename,
         'audio_data': audio_data,
@@ -77,9 +92,8 @@ def save_session_recording(session_id, filename, audio_data, topic, speech_type,
         'created': time.time(),
         'modified': time.time()
     }
-    
+
     user_sessions[session_id].append(recording_info)
-    print(f"📁 Saved recording to session {session_id}: {filename}")
     return True
 
 def get_session_recordings(session_id):
@@ -131,10 +145,12 @@ def cleanup_session(session_id):
 app = Flask(__name__)
 CORS(app)
 
-logger = setup_logger(__name__)
-
 if PRODUCTION_MODE:
+    logger = MockLogger()
     client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    speech_evaluator = None
+else:
+    logger = setup_logger(__name__)
 
 if not PRODUCTION_MODE:
     try:
@@ -399,7 +415,7 @@ def clear_all_recordings():
 @app.route('/api/record', methods=['POST'])
 def process_recording():
     session_id = get_session_id(request)
-    
+
     if not session_id:
         return jsonify({
             'success': False,
@@ -643,6 +659,7 @@ def stream_feedback(session_id, filename):
             )
             
             full_feedback = ""
+            chunk_count = 0
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     content = chunk.choices[0].delta.content
@@ -652,9 +669,13 @@ def stream_feedback(session_id, filename):
                     else:
                         spaced_content = content
                     full_feedback += spaced_content
+                    chunk_count += 1
                     yield f"data: {json.dumps({'content': spaced_content, 'type': 'chunk'})}\n\n"
-                                            
-                       
+
+            # Send completion signal
+            print(f"✓ Stream completed - sent {chunk_count} chunks, {len(full_feedback)} chars")
+            yield f"data: {json.dumps({'type': 'complete', 'total_chunks': chunk_count})}\n\n"
+
             # Update the recording with the complete feedback
             for rec in user_sessions.get(session_id, []):
                 if rec['filename'] == filename:
@@ -803,6 +824,7 @@ def get_session_data():
 
 @app.route('/')
 def serve_frontend():
+    global PRODUCTION_MODE
     if PRODUCTION_MODE:
         return """
 <!DOCTYPE html>
@@ -862,6 +884,15 @@ def serve_frontend():
             box-sizing: border-box;
         }
 
+        /* Performance optimizations */
+        *,
+        *::before,
+        *::after {
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
         body {
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
             background: var(--primary-bg);
@@ -871,7 +902,7 @@ def serve_frontend():
             position: relative;
         }
 
-        /* Advanced Background Effects */
+        /* Optimized Background Effects */
         body::before {
             content: '';
             position: fixed;
@@ -879,7 +910,7 @@ def serve_frontend():
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
+            background:
                 radial-gradient(circle at 20% 20%, rgba(157, 78, 221, 0.15) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(61, 90, 254, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 40% 60%, rgba(124, 77, 255, 0.08) 0%, transparent 50%);
@@ -887,7 +918,7 @@ def serve_frontend():
             z-index: -1;
         }
 
-        /* Animated Grid Pattern */
+        /* Static Grid Pattern - Animation removed for performance */
         body::after {
             content: '';
             position: fixed;
@@ -895,18 +926,12 @@ def serve_frontend():
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: 
+            background-image:
                 linear-gradient(rgba(157, 78, 221, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(157, 78, 221, 0.03) 1px, transparent 1px);
             background-size: 50px 50px;
-            animation: gridMove 20s linear infinite;
             pointer-events: none;
             z-index: -1;
-        }
-
-        @keyframes gridMove {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
         }
 
         /* Enhanced Floating Shapes */
@@ -926,31 +951,31 @@ def serve_frontend():
             background: linear-gradient(135deg, rgba(157, 78, 221, 0.1), rgba(61, 90, 254, 0.05));
             border: 1px solid rgba(157, 78, 221, 0.2);
             border-radius: 50%;
-            animation: float 25s infinite linear;
-            backdrop-filter: blur(10px);
+            animation: floatOptimized 25s infinite ease-in-out;
+            will-change: transform;
         }
 
-        .shape:nth-child(1) { 
-            width: 120px; height: 120px; 
-            top: 15%; left: 8%; 
+        .shape:nth-child(1) {
+            width: 120px; height: 120px;
+            top: 15%; left: 8%;
             animation-delay: 0s;
-            box-shadow: 0 0 30px rgba(157, 78, 221, 0.2);
+            box-shadow: 0 0 15px rgba(157, 78, 221, 0.15);
         }
-        .shape:nth-child(2) { 
-            width: 80px; height: 80px; 
-            top: 70%; left: 85%; 
+        .shape:nth-child(2) {
+            width: 80px; height: 80px;
+            top: 70%; left: 85%;
             animation-delay: -8s;
             background: linear-gradient(135deg, rgba(61, 90, 254, 0.1), rgba(124, 77, 255, 0.05));
         }
-        .shape:nth-child(3) { 
-            width: 150px; height: 150px; 
-            top: 25%; left: 75%; 
+        .shape:nth-child(3) {
+            width: 150px; height: 150px;
+            top: 25%; left: 75%;
             animation-delay: -15s;
-            box-shadow: 0 0 40px rgba(61, 90, 254, 0.15);
+            box-shadow: 0 0 15px rgba(61, 90, 254, 0.12);
         }
-        .shape:nth-child(4) { 
-            width: 100px; height: 100px; 
-            top: 85%; left: 15%; 
+        .shape:nth-child(4) {
+            width: 100px; height: 100px;
+            top: 85%; left: 15%;
             animation-delay: -22s;
         }
         .shape:nth-child(5) {
@@ -960,26 +985,13 @@ def serve_frontend():
             background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(157, 78, 221, 0.05));
         }
 
-        @keyframes float {
-            0% { 
-                transform: translateY(0px) translateX(0px) rotate(0deg) scale(1); 
-                opacity: 0.7; 
+        /* Optimized float animation - using only transform for GPU acceleration */
+        @keyframes floatOptimized {
+            0%, 100% {
+                transform: translate3d(0, 0, 0);
             }
-            25% { 
-                transform: translateY(-30px) translateX(20px) rotate(90deg) scale(1.1); 
-                opacity: 1; 
-            }
-            50% { 
-                transform: translateY(-10px) translateX(-15px) rotate(180deg) scale(0.9); 
-                opacity: 0.8; 
-            }
-            75% { 
-                transform: translateY(-40px) translateX(10px) rotate(270deg) scale(1.05); 
-                opacity: 1; 
-            }
-            100% { 
-                transform: translateY(0px) translateX(0px) rotate(360deg) scale(1); 
-                opacity: 0.7; 
+            50% {
+                transform: translate3d(15px, -25px, 0);
             }
         }
 
@@ -1009,7 +1021,7 @@ def serve_frontend():
             height: 2px;
             background: var(--neon-gradient);
             border-radius: 2px;
-            box-shadow: 0 0 20px rgba(157, 78, 221, 0.6);
+            box-shadow: 0 0 15px rgba(157, 78, 221, 0.6);
         }
 
         .header-icon {
@@ -1038,14 +1050,11 @@ def serve_frontend():
             animation: iconPulse 3s ease-in-out infinite;
         }
 
-        @keyframes iconGlow {
-            0% { filter: drop-shadow(0 0 20px rgba(157, 78, 221, 0.5)); }
-            100% { filter: drop-shadow(0 0 40px rgba(157, 78, 221, 0.8)); }
-        }
+        /* iconGlow removed - filter animations are expensive */
 
         @keyframes iconPulse {
             0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
-            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.6; }
+            50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.6; }
         }
 
         .header h1 {
@@ -1075,8 +1084,8 @@ def serve_frontend():
         }
 
         @keyframes textGlow {
-            0% { text-shadow: 0 0 10px rgba(0, 245, 255, 0.5); }
-            100% { text-shadow: 0 0 20px rgba(0, 245, 255, 0.8), 0 0 30px rgba(0, 245, 255, 0.4); }
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
         }
 
         .header p {
@@ -1100,7 +1109,7 @@ def serve_frontend():
             color: var(--text-accent);
             font-size: 0.95rem;
             font-weight: 500;
-            backdrop-filter: blur(20px);
+            /* backdrop-filter removed for performance */
             box-shadow: var(--shadow-card);
             position: relative;
             overflow: hidden;
@@ -1125,7 +1134,7 @@ def serve_frontend():
         /* Futuristic Glass Cards */
         .glass-card {
             background: var(--card-bg);
-            backdrop-filter: blur(25px);
+            /* backdrop-filter removed for performance */
             border: 1px solid var(--glass-border);
             border-radius: 25px;
             padding: 45px;
@@ -1162,8 +1171,8 @@ def serve_frontend():
         }
 
         @keyframes cardGlow {
-            0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.3; }
-            50% { transform: rotate(180deg) scale(1.1); opacity: 0.6; }
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.5; }
         }
 
         /* Enhanced Section Titles */
@@ -1245,7 +1254,7 @@ def serve_frontend():
             cursor: pointer;
             transition: var(--transition-smooth);
             appearance: none;
-            backdrop-filter: blur(20px);
+            /* backdrop-filter removed for performance */
             box-shadow: 
                 0 10px 30px rgba(0, 0, 0, 0.3),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1),
@@ -1321,7 +1330,7 @@ def serve_frontend():
             min-height: 70px;
             min-width: 220px;
             white-space: nowrap;
-            backdrop-filter: blur(15px);
+            /* backdrop-filter removed for performance */
             border: 2px solid transparent;
         }
 
@@ -1372,48 +1381,48 @@ def serve_frontend():
         .btn-record {
             background: var(--danger-gradient);
             color: white;
-            box-shadow: 0 10px 30px rgba(255, 87, 34, 0.3);
+            box-shadow: 0 8px 16px rgba(255, 87, 34, 0.3);
         }
 
         .btn-record.recording {
             animation: recordingPulse 1.5s infinite;
             background: linear-gradient(135deg, #FF1744 0%, #D32F2F 100%);
-            box-shadow: 0 0 40px rgba(255, 23, 68, 0.6);
+            box-shadow: 0 0 15px rgba(255, 23, 68, 0.6);
         }
 
         .btn-list {
             background: var(--secondary-gradient);
             color: white;
-            box-shadow: 0 10px 30px rgba(156, 39, 176, 0.3);
+            box-shadow: 0 8px 16px rgba(156, 39, 176, 0.3);
         }
 
         .btn-play {
             background: var(--success-gradient);
             color: white;
-            box-shadow: 0 10px 30px rgba(0, 230, 118, 0.3);
+            box-shadow: 0 8px 16px rgba(0, 230, 118, 0.3);
         }
 
         .btn-stop {
             background: var(--warning-gradient);
             color: white;
-            box-shadow: 0 10px 30px rgba(255, 143, 0, 0.3);
+            box-shadow: 0 8px 16px rgba(255, 143, 0, 0.3);
         }
 
         .btn-secondary {
             background: linear-gradient(135deg, rgba(25, 25, 50, 0.8), rgba(60, 45, 120, 0.5));
             color: var(--text-primary);
             border-color: var(--glass-border);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
         }
 
         @keyframes recordingPulse {
-            0%, 100% { 
-                transform: scale(1); 
-                box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7), 0 10px 30px rgba(255, 87, 34, 0.3); 
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7), 0 8px 16px rgba(255, 87, 34, 0.3);
             }
-            50% { 
-                transform: scale(1.05); 
-                box-shadow: 0 0 0 20px rgba(255, 23, 68, 0), 0 15px 40px rgba(255, 87, 34, 0.5); 
+            50% {
+                transform: scale(1.03);
+                box-shadow: 0 0 0 15px rgba(255, 23, 68, 0), 0 8px 16px rgba(255, 87, 34, 0.5);
             }
         }
 
@@ -1459,7 +1468,7 @@ def serve_frontend():
             font-size: 16px;
             color: var(--text-primary);
             transition: var(--transition-smooth);
-            backdrop-filter: blur(15px);
+            /* backdrop-filter removed for performance */
             box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
@@ -1487,7 +1496,7 @@ def serve_frontend():
             border: 1px solid var(--glass-border);
             border-radius: 18px;
             margin-top: 25px;
-            backdrop-filter: blur(10px);
+            /* backdrop-filter removed for performance */
         }
 
         .checkbox-wrapper input[type="checkbox"] {
@@ -1587,7 +1596,7 @@ def serve_frontend():
             justify-content: space-between;
             align-items: center;
             transition: var(--transition-smooth);
-            backdrop-filter: blur(15px);
+            /* backdrop-filter removed for performance */
             position: relative;
             overflow: hidden;
         }
@@ -1658,7 +1667,7 @@ def serve_frontend():
                 rgba(123, 31, 162, 0.9) 30%, 
                 rgba(147, 112, 219, 0.85) 70%, 
                 rgba(138, 43, 226, 0.9) 100%);
-            backdrop-filter: blur(30px);
+            /* backdrop-filter removed for performance */
             border: 2px solid rgba(157, 78, 221, 0.4);
             border-radius: 25px;
             padding: 40px;
@@ -1782,7 +1791,7 @@ def serve_frontend():
             border-radius: 50%;
             background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
             animation: loadingDots 1.8s ease-in-out infinite;
-            box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
         }
 
         .feedback-loading .loading-dots span:nth-child(1) { animation-delay: 0s; }
@@ -1798,7 +1807,7 @@ def serve_frontend():
             40% { 
                 transform: scale(1.3); 
                 opacity: 1; 
-                box-shadow: 0 0 20px rgba(0, 245, 255, 0.8);
+                box-shadow: 0 0 15px rgba(0, 245, 255, 0.8);
             }
         }
 
@@ -1809,7 +1818,7 @@ def serve_frontend():
             padding: 35px;
             border-radius: 20px;
             margin-top: 25px;
-            backdrop-filter: blur(15px);
+            /* backdrop-filter removed for performance */
             color: #4a5568;
             line-height: 1.7;
             box-shadow: 
@@ -1840,7 +1849,7 @@ def serve_frontend():
             margin: 25px 0;
             text-align: center;
             font-weight: 600;
-            backdrop-filter: blur(20px);
+            /* backdrop-filter removed for performance */
             border: 1px solid;
             position: relative;
             overflow: hidden;
@@ -1866,21 +1875,21 @@ def serve_frontend():
             background: linear-gradient(135deg, rgba(0, 230, 118, 0.2), rgba(76, 175, 80, 0.1));
             color: var(--neon-cyan);
             border-color: rgba(0, 230, 118, 0.4);
-            box-shadow: 0 0 30px rgba(0, 230, 118, 0.2);
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.2);
         }
 
         .status-error {
             background: linear-gradient(135deg, rgba(255, 87, 34, 0.2), rgba(244, 67, 54, 0.1));
             color: #FF5722;
             border-color: rgba(255, 87, 34, 0.4);
-            box-shadow: 0 0 30px rgba(255, 87, 34, 0.2);
+            box-shadow: 0 0 15px rgba(255, 87, 34, 0.2);
         }
 
         .status-info {
             background: linear-gradient(135deg, rgba(255, 213, 79, 0.2), rgba(255, 152, 0, 0.1));
             color: #FFD54F;
             border-color: rgba(255, 213, 79, 0.4);
-            box-shadow: 0 0 30px rgba(255, 213, 79, 0.2);
+            box-shadow: 0 0 15px rgba(255, 213, 79, 0.2);
         }
 
         /* Enhanced Audio Controls */
@@ -1894,9 +1903,9 @@ def serve_frontend():
             max-width: 600px;
             border-radius: 20px;
             background: linear-gradient(135deg, rgba(25, 25, 50, 0.9), rgba(60, 45, 120, 0.4));
-            backdrop-filter: blur(15px);
+            /* backdrop-filter removed for performance */
             border: 1px solid var(--glass-border);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
         }
 
         /* Utility Classes */
@@ -2261,7 +2270,8 @@ def serve_frontend():
         let sessionId = null;
         let feedbackEventSource = null;
 
-        const API_BASE = 'https://speakeasyy.onrender.com/api';
+        // Use current host for API calls (works for both local and production)
+        const API_BASE = window.location.origin + '/api';
 
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -3339,7 +3349,7 @@ def serve_frontend():
                 };
 
                 showStatus('📤 Sending to AI for analysis...', 'info', 0);
-                
+
                 const response = await fetch(API_BASE + '/record', {
                     method: 'POST',
                     headers: {
@@ -3431,10 +3441,12 @@ def serve_frontend():
                     }
                     
                     if (data.type === 'complete') {
-                        console.log('Analysis completed');
+                        console.log('✓ Analysis completed, chunks received:', data.total_chunks || 'unknown');
+                        // Hide loading indicator
+                        document.getElementById('feedbackLoading').style.display = 'none';
                         feedbackEventSource.close();
                         feedbackEventSource = null;
-                        
+
                         // Remove streaming classes
                         const streamingElements = document.querySelectorAll('.feedback-streaming');
                         streamingElements.forEach(el => el.classList.remove('feedback-streaming'));
@@ -3445,8 +3457,16 @@ def serve_frontend():
             };
             
             feedbackEventSource.onerror = function(event) {
+                console.error('EventSource error:', event);
                 feedbackEventSource.close();
                 feedbackEventSource = null;
+
+                // Only show error if no feedback was received
+                const feedbackText = document.getElementById('feedbackText');
+                if (feedbackText.textContent.trim() === '') {
+                    document.getElementById('feedbackLoading').style.display = 'none';
+                    showStatus('❌ Analysis failed: Connection error', 'error');
+                }
             };
         }
 
@@ -3554,7 +3574,7 @@ def serve_frontend():
 </html>
 """
     else:
-        return "PI is running. Frontend at http://localhost:3000"
+        return f"API is running. Frontend at http://localhost:3000 (PRODUCTION_MODE={PRODUCTION_MODE})"
 
 @app.route('/api/session', methods=['DELETE'])
 def clear_session():
