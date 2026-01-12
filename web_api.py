@@ -3912,28 +3912,36 @@ def serve_frontend():
             const scenario = scenarios[scenarioKey];
             if (!scenario) return;
 
-            // Switch to record tab
-            const recordTab = document.querySelectorAll('.nav-tab')[0];
-            recordTab.click();
+            // Directly switch tabs without click event
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById('recordTab').classList.add('active');
+            document.querySelectorAll('.nav-tab')[0].classList.add('active');
 
-            // Small delay to ensure tab is switched
-            setTimeout(() => {
-                // Make sure recording setup is visible
-                document.getElementById('recordingSetup').classList.add('active');
-                document.getElementById('recordingsList').classList.remove('active');
-                document.getElementById('feedbackSection').classList.remove('active');
-                document.getElementById('recordingStatus').classList.remove('active');
+            // Make sure recording setup is visible
+            document.getElementById('recordingSetup').classList.add('active');
+            document.getElementById('recordingsList').classList.remove('active');
+            document.getElementById('feedbackSection').classList.remove('active');
+            document.getElementById('recordingStatus').classList.remove('active');
 
-                // Fill in the form
-                document.getElementById('topicInput').value = scenario.topic;
-                document.getElementById('speechTypeInput').value = scenario.type;
+            // Fill in the form
+            document.getElementById('topicInput').value = scenario.topic;
+            document.getElementById('speechTypeInput').value = scenario.type;
 
-                // Show confirmation
-                showStatus('✓ Scenario loaded: ' + scenario.topic, 'success');
+            // Show confirmation
+            showStatus('✓ Scenario loaded: ' + scenario.topic, 'success');
 
-                // Scroll to the form inputs
-                document.getElementById('topicInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 150);
+            // Scroll to show form with a bit less aggressive positioning
+            requestAnimationFrame(() => {
+                const topicInput = document.getElementById('topicInput');
+                const rect = topicInput.getBoundingClientRect();
+                const offset = window.pageYOffset + rect.top - 120; // 120px from top instead of center
+                window.scrollTo({ top: offset, behavior: 'auto' });
+            });
         }
 
         // Copy Feedback
