@@ -607,37 +607,73 @@ def stream_feedback(session_id, filename):
                 
                 if MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
                     prompt = (
-                        f"You are a helpful assistant with the purpose of grading user presentations.\n"
-                        f"The following presentation is pretty short and may lack sufficient content, so grade it with that in mind, and not necessarily in a negative way.\n"
-                        f"Please give appropriate feedback accordingly based on the following topic, type, and transcription of the user's presentation:\n\n"
-                        f"Speech topic: '{topic}'\n"
-                        f"Speech type: {speech_type}\n"
-                        f"Transcription: '{transcription_text}'\n\n"
+                        f"You're reviewing a {speech_type} speech about '{topic}'. Here's what they said:\n\n"
+                        f"{transcription_text}\n\n"
                         f"{repeat_context}\n"
-                        f"Please grade the user presentation out of a totaled 100 points and give constructive feedback as if you WERE a teacher/college professor. Before starting, please clearly indicate the type and topic of the presentation, and give a very quick (1-2 sentence summary) of it before diving into feedback.\n"
-                        f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points. Don't be afraid to give scores close to 0 if the presentation contains close to no content.\n"
-                        f"Don't always have scores in increments of 5, use more varied/granular scores, but still scores that truly reflect the quality of the presentation.\n"
-                        f"Note good things they did and things they can improve on. Try to give an amount of feedback relatively proportional to the length of the speech (longer ones should generally have more feedback), but don't force it. Feel free to provide what you think is suitable for the given presentation.\n"
-                        f"Please put adequate spacing. There MUST be a clear separating --- between each chunk of the 5 listed categories that you are to give feedback on.\n" 
-                        f"Be friendly and encouraging, but not too much to the point where your feedback is no longer truthful. Still be honest about your evaluation, but in a semi-gentle way.\n"
-                        f"Lastly, be dynamic in your responses. Don't give stereotypical, boring advice that they can find anywhere online. Be unique very engaging with your response, ensuring it is still full, detailed, and encapsulates helpful material that will truly help the user improve their verbal presenting skills."
+                        f"It's a quick one - about {int(duration)} seconds. Give them feedback like you're a experienced coach who's heard thousands of speeches.\n\n"
+                        f"Format your response like this:\n\n"
+                        f"**OVERALL: [X]/100**\n\n"
+                        f"**📊 BREAKDOWN**\n"
+                        f"Opening & Hook: [X]/20 - [quick comment]\n"
+                        f"Content & Clarity: [X]/20 - [quick comment]\n"
+                        f"Vocal Delivery: [X]/20 - [quick comment]\n"
+                        f"Structure & Flow: [X]/20 - [quick comment]\n"
+                        f"Closing Impact: [X]/20 - [quick comment]\n\n"
+                        f"**💪 What worked:**\n"
+                        f"[2-3 things, quote what they actually said when relevant]\n\n"
+                        f"**🎯 Room to grow:**\n"
+                        f"[2-3 things that need work, be specific about when/where it happened]\n\n"
+                        f"**🔧 Here's how to fix it:**\n"
+                        f"[Give them actual techniques they can try. Not \"be more confident\" but \"Try this: record yourself saying your opening line 5 times, each time a bit slower and louder than the last. Pick the one that feels most natural.\"]\n\n"
+                        f"**🚀 Try this next time:**\n"
+                        f"[One specific challenge for their next recording]\n\n"
+                        f"Keep it real - use precise scores (like 16.5/20, not just round numbers). Write like a human coach, not a textbook. Quote their actual words when you can. Make every suggestion something they can actually do, not vague advice.\n"
                         f"{language_instruction}"
                     )
                 else:
                     prompt = (
-                        f"You are a helpful assistant with the purpose of grading user presentations.\n"
-                        f"Please give appropriate feedback accordingly based on the following topic, type, and transcription of the user's presentation:\n\n"
-                        f"Speech topic: '{topic}'\n"
-                        f"Speech type: {speech_type}\n"
-                        f"Transcription: '{transcription_text}'\n\n"
+                        f"You're a speech coach reviewing a {speech_type} about '{topic}'. Duration: about {int(duration)} seconds.\n\n"
+                        f"Here's what they said:\n{transcription_text}\n\n"
                         f"{repeat_context}\n"
-                        f"Please grade the user presentation out of a totaled 100 points and give constructive feedback as if you WERE a teacher/college professor. Before starting, please clearly indicate the type and topic of the presentation, and give a very quick (1-2 sentence summary) of it before diving into feedback.\n"
-                        f"Provide scores out of 20 for these following categories: Structure, Content, Delivery and Voice, Overall Flow and Rhythm, and Conclusion. Add up the sum of these scores to get the total out of 100 points. Don't be afraid to give scores close to 0 if the presentation contains close to no content.\n"
-                        f"Don't always have scores in increments of 5, use more varied/granular scores, but still scores that truly reflect the quality of the presentation.\n"
-                        f"Note good things they did and things they can improve on. Try to give an amount of feedback relatively proportional to the length of the speech (longer ones should generally have more feedback), but don't force it. Feel free to provide what you think is suitable for the given presentation.\n"
-                        f"Please put adequate spacing. There MUST be a clear separating --- between each chunk of the 5 listed categories that you are to give feedback on.\n" 
-                        f"Be friendly and encouraging, but not too much to the point where your feedback is no longer truthful. Still be honest about your evaluation, but in a semi-gentle way.\n"
-                        f"Lastly, be dynamic in your responses. Don't give stereotypical, boring advice that they can find anywhere online. Be unique very engaging with your response, ensuring it is still full, detailed, and encapsulates helpful material that will truly help the user improve their verbal presenting skills."
+                        f"Give them detailed feedback like you're sitting across from them after they just finished. Be real with them - they want to improve, not just hear they did great.\n\n"
+                        f"**{topic.upper()}** - {speech_type.title()}\n"
+                        f"*First impression:* [What's your gut reaction? 1-2 sentences]\n\n"
+                        f"**OVERALL: [X]/100**\n\n"
+                        f"**📊 THE BREAKDOWN**\n\n"
+                        f"**Opening & Hook: [X]/20**\n"
+                        f"[How'd they start? Did it hook you? Quote their first few lines and talk about whether it worked.]\n\n"
+                        f"**Content & Clarity: [X]/20**\n"
+                        f"[Did their points land? Were they clear? Give examples of where they nailed it or got muddy.]\n\n"
+                        f"**Vocal Delivery: [X]/20**\n"
+                        f"[Talk about their voice - pace, energy, tone. Call out specific moments. If they said \"um\" every other word or rushed through the middle, say when.]\n\n"
+                        f"**Structure & Flow: [X]/20**\n"
+                        f"[Did it flow naturally or feel choppy? How were the transitions? Walk through their structure.]\n\n"
+                        f"**Closing: [X]/20**\n"
+                        f"[How'd they wrap it up? Did it stick with you? Quote their ending.]\n\n"
+                        f"**💪 What killed:**\n"
+                        f"[3-4 things they genuinely did well. Quote them. Be specific - not \"good energy\" but \"when you said '[exact quote]', that landed really well because...\"\n\n"
+                        f"**🎯 What needs work:**\n\n"
+                        f"1. [First thing] - [Why it matters and where you noticed it]\n"
+                        f"2. [Second thing] - [Be specific with examples]\n"
+                        f"3. [Third thing] - [Don't hold back if it's important]\n\n"
+                        f"**🔧 Here's how to actually fix it:**\n\n"
+                        f"For each issue above, give them something they can practice TODAY:\n\n"
+                        f"**[Name the technique]**\n"
+                        f"[Real talk on how to do it. Example: \"Your pacing was all over the place. Here's what to do: Set a metronome to 140 BPM. Read your script out loud matching that rhythm for 5 minutes. It'll feel weird at first, but you'll find your sweet spot between too fast and putting people to sleep.\"]\n\n"
+                        f"**[Another technique]**\n"
+                        f"[Another concrete fix they can practice]\n\n"
+                        f"**[Third technique]**\n"
+                        f"[One more actionable thing]\n\n"
+                        f"**📈 The numbers:**\n"
+                        f"• Pace: roughly [X] words/min - [too fast/just right/kinda slow]\n"
+                        f"• Filler words: [how many and which ones - be honest]\n"
+                        f"• Sentence structure: [varied or monotonous?]\n"
+                        f"• Energy: [did it stay flat, build up, or drop off?]\n\n"
+                        f"**🚀 Next time you practice:**\n"
+                        f"[One specific thing to try. Make it measurable. Like: \"Record this again but start with a personal story, pause 3 full seconds before your main point, and cut 'um/uh' in half. Shoot for under {int(duration*0.9)} seconds.\"]\n\n"
+                        f"**💡 Level-up move:**\n"
+                        f"[One advanced tip specific to this type of speech that could really elevate it]\n\n"
+                        f"Remember: Use real scores (like 17/20, 16.5/20), quote their actual words, and make every tip something they can literally do in their next practice session. Write like you're texting them feedback, not writing a formal evaluation.\n"
                         f"{language_instruction}"
                     )
                 
@@ -647,30 +683,25 @@ def stream_feedback(session_id, filename):
                 topic, speech_type, transcription_text, duration, language, False
             )
             
-            # Stream the response from open ai
+            # Stream the response from OpenAI
             stream = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "user", "content": feedback_prompt}
                 ],
-                max_tokens=1500,
-                temperature=0.5,
+                max_tokens=2500,
+                temperature=0.7,
                 stream=True
             )
-            
+
             full_feedback = ""
             chunk_count = 0
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     content = chunk.choices[0].delta.content
-                    # Add spacing only when detecting --- separators
-                    if content and '---' in content:
-                        spaced_content = content + "\n"
-                    else:
-                        spaced_content = content
-                    full_feedback += spaced_content
+                    full_feedback += content
                     chunk_count += 1
-                    yield f"data: {json.dumps({'content': spaced_content, 'type': 'chunk'})}\n\n"
+                    yield f"data: {json.dumps({'content': content, 'type': 'chunk'})}\n\n"
 
             # Send completion signal
             print(f"✓ Stream completed - sent {chunk_count} chunks, {len(full_feedback)} chars")
@@ -1140,7 +1171,7 @@ def serve_frontend():
             padding: 45px;
             margin-bottom: 40px;
             box-shadow: var(--shadow-card);
-            animation: slideInUp 1s ease-out;
+            animation: slideInUp 0.3s ease-out;
             position: relative;
             overflow: hidden;
         }
@@ -1434,7 +1465,7 @@ def serve_frontend():
 
         .recording-setup.active {
             display: block;
-            animation: slideInUp 0.6s ease-out;
+            animation: slideInUp 0.25s ease-out;
         }
 
         .form-grid {
@@ -1515,7 +1546,7 @@ def serve_frontend():
 
         .recording-status.active {
             display: block;
-            animation: slideInUp 0.6s ease-out;
+            animation: slideInUp 0.25s ease-out;
         }
 
         .recording-indicator {
@@ -1578,7 +1609,7 @@ def serve_frontend():
 
         .recordings-list.active {
             display: block;
-            animation: slideInUp 0.6s ease-out;
+            animation: slideInUp 0.25s ease-out;
         }
 
         .recordings-grid {
@@ -1658,16 +1689,15 @@ def serve_frontend():
 
         .feedback-section.active {
             display: block;
-            animation: slideInUp 0.6s ease-out;
+            animation: slideInUp 0.25s ease-out;
         }
 
         .feedback-content {
-            background: linear-gradient(135deg, 
-                rgba(74, 20, 140, 0.95) 0%, 
-                rgba(123, 31, 162, 0.9) 30%, 
-                rgba(147, 112, 219, 0.85) 70%, 
+            background: linear-gradient(135deg,
+                rgba(74, 20, 140, 0.95) 0%,
+                rgba(123, 31, 162, 0.9) 30%,
+                rgba(147, 112, 219, 0.85) 70%,
                 rgba(138, 43, 226, 0.9) 100%);
-            /* backdrop-filter removed for performance */
             border: 2px solid rgba(157, 78, 221, 0.4);
             border-radius: 25px;
             padding: 40px;
@@ -1677,26 +1707,9 @@ def serve_frontend():
             font-size: 16px;
             position: relative;
             overflow: hidden;
-            box-shadow: 
+            box-shadow:
                 0 30px 60px rgba(74, 20, 140, 0.5),
-                inset 0 2px 0 rgba(255, 255, 255, 0.3),
-                0 0 80px rgba(157, 78, 221, 0.4);
-            animation: feedbackGlow 4s ease-in-out infinite alternate;
-        }
-
-        @keyframes feedbackGlow {
-            0% { 
-                box-shadow: 
-                    0 30px 60px rgba(74, 20, 140, 0.5),
-                    inset 0 2px 0 rgba(255, 255, 255, 0.3),
-                    0 0 80px rgba(157, 78, 221, 0.4);
-            }
-            100% { 
-                box-shadow: 
-                    0 35px 70px rgba(74, 20, 140, 0.7),
-                    inset 0 2px 0 rgba(255, 255, 255, 0.4),
-                    0 0 100px rgba(157, 78, 221, 0.6);
-            }
+                inset 0 2px 0 rgba(255, 255, 255, 0.3);
         }
 
         .feedback-content::before {
@@ -1706,19 +1719,11 @@ def serve_frontend():
             left: -50%;
             width: 200%;
             height: 200%;
-            background: 
-                radial-gradient(circle at 25% 25%, rgba(0, 245, 255, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 75% 75%, rgba(255, 16, 240, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(157, 78, 221, 0.1) 0%, transparent 50%);
-            animation: bubbleFloat 20s ease-in-out infinite;
+            background:
+                radial-gradient(circle at 25% 25%, rgba(0, 245, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 75% 75%, rgba(255, 16, 240, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(157, 78, 221, 0.08) 0%, transparent 50%);
             pointer-events: none;
-        }
-
-        @keyframes bubbleFloat {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(40px, -40px) rotate(90deg); }
-            50% { transform: translate(-30px, 30px) rotate(180deg); }
-            75% { transform: translate(30px, -20px) rotate(270deg); }
         }
 
         .feedback-content::after {
@@ -1728,16 +1733,10 @@ def serve_frontend():
             left: 0;
             right: 0;
             bottom: 0;
-            background: 
-                linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%),
-                radial-gradient(circle at 30% 70%, rgba(0, 245, 255, 0.08) 0%, transparent 50%);
+            background:
+                linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.03) 50%, transparent 70%),
+                radial-gradient(circle at 30% 70%, rgba(0, 245, 255, 0.06) 0%, transparent 50%);
             pointer-events: none;
-            animation: shimmer 10s ease-in-out infinite;
-        }
-
-        @keyframes shimmer {
-            0%, 100% { opacity: 0.3; transform: translateX(-15px); }
-            50% { opacity: 1; transform: translateX(15px); }
         }
 
         .feedback-content .feedback-text {
@@ -1747,17 +1746,31 @@ def serve_frontend():
             font-weight: 500;
             white-space: pre-wrap;
             font-family: 'Inter', sans-serif;
+            max-height: 600px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(147, 51, 234, 0.5) rgba(255, 255, 255, 0.1);
         }
 
-        .feedback-streaming {
-            opacity: 0;
-            animation: fadeInText 0.4s ease-out forwards;
+        .feedback-content .feedback-text::-webkit-scrollbar {
+            width: 8px;
         }
 
-        @keyframes fadeInText {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+        .feedback-content .feedback-text::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
         }
+
+        .feedback-content .feedback-text::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.5);
+            border-radius: 4px;
+        }
+
+        .feedback-content .feedback-text::-webkit-scrollbar-thumb:hover {
+            background: rgba(147, 51, 234, 0.7);
+        }
+
 
         .feedback-loading {
             display: flex;
@@ -2065,6 +2078,152 @@ def serve_frontend():
                 --glass-border: rgba(255, 255, 255, 0.5);
             }
         }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 12px;
+            margin: 25px 0;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 14px 20px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .nav-tab i {
+            margin-right: 8px;
+        }
+
+        .nav-tab:hover {
+            background: rgba(147, 51, 234, 0.1);
+            border-color: rgba(147, 51, 234, 0.3);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(79, 70, 229, 0.3));
+            border-color: rgba(147, 51, 234, 0.5);
+            color: var(--text-primary);
+            box-shadow: 0 4px 15px rgba(147, 51, 234, 0.2);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Practice Scenarios */
+        .scenarios-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .scenario-card {
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease;
+            text-align: center;
+            will-change: background, border-color;
+        }
+
+        .scenario-card:hover {
+            background: rgba(147, 51, 234, 0.1);
+            border-color: rgba(147, 51, 234, 0.3);
+        }
+
+        .scenario-card i {
+            font-size: 36px;
+            color: var(--primary-purple);
+            margin-bottom: 12px;
+        }
+
+        .scenario-card h3 {
+            margin: 12px 0 8px;
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+
+        .scenario-card p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* Tips Container */
+        .tips-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .tip-card {
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 4px solid var(--primary-purple);
+            border-radius: 10px;
+        }
+
+        .tip-card h3 {
+            margin: 0 0 12px;
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+
+        .tip-card h3 i {
+            margin-right: 10px;
+            color: var(--primary-purple);
+        }
+
+        .tip-card p {
+            margin: 0;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        /* Copy Feedback Button */
+        .copy-feedback-btn {
+            margin-top: 15px;
+            padding: 12px 24px;
+            background: rgba(147, 51, 234, 0.2);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .copy-feedback-btn:hover {
+            background: rgba(147, 51, 234, 0.3);
+        }
+
+        .copy-feedback-btn i {
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -2089,6 +2248,21 @@ def serve_frontend():
             <i class="fas fa-user-circle"></i> Session: <span id="sessionId">Initializing...</span>
         </div>
 
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('record')">
+                <i class="fas fa-microphone"></i> Record Speech
+            </button>
+            <button class="nav-tab" onclick="switchTab('practice')">
+                <i class="fas fa-dumbbell"></i> Practice Scenarios
+            </button>
+            <button class="nav-tab" onclick="switchTab('tips')">
+                <i class="fas fa-lightbulb"></i> Common Tips
+            </button>
+        </div>
+
+        <!-- Record Tab Content -->
+        <div id="recordTab" class="tab-content active">
         <div class="glass-card">
             <div class="section-title">
                 <div class="section-icon">
@@ -2232,6 +2406,9 @@ def serve_frontend():
                         </div>
                     </div>
                     <div class="feedback-text" id="feedbackText" style="display: none;"></div>
+                    <button class="copy-feedback-btn" id="copyFeedbackBtn" style="display: none;" onclick="copyFeedback()">
+                        <i class="fas fa-copy"></i> Copy Feedback
+                    </button>
                 </div>
             </div>
 
@@ -2256,6 +2433,103 @@ def serve_frontend():
                 <audio controls id="audioPlayer">
                     Your browser does not support the audio element.
                 </audio>
+            </div>
+        </div>
+        </div> <!-- End Record Tab -->
+
+        <!-- Practice Scenarios Tab -->
+        <div id="practiceTab" class="tab-content">
+            <div class="glass-card">
+                <div class="section-title">
+                    <div class="section-icon"><i class="fas fa-dumbbell"></i></div>
+                    <span>Practice Scenarios</span>
+                </div>
+                <p style="margin-bottom: 20px; opacity: 0.9;">Jump into common speaking situations. Pick a scenario, get a prompt, and start practicing!</p>
+
+                <div class="scenarios-grid">
+                    <div class="scenario-card" onclick="loadScenario('elevator')">
+                        <i class="fas fa-briefcase"></i>
+                        <h3>Elevator Pitch</h3>
+                        <p>30 seconds to explain what you do</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('persuasive')">
+                        <i class="fas fa-bullhorn"></i>
+                        <h3>Persuasive Speech</h3>
+                        <p>Convince someone of your position</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('toast')">
+                        <i class="fas fa-glass-cheers"></i>
+                        <h3>Wedding Toast</h3>
+                        <p>Heartfelt speech for a special occasion</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('intro')">
+                        <i class="fas fa-user-tie"></i>
+                        <h3>Self Introduction</h3>
+                        <p>Introduce yourself in a professional setting</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('demo')">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <h3>Product Demo</h3>
+                        <p>Present a product or idea clearly</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('story')">
+                        <i class="fas fa-book-open"></i>
+                        <h3>Storytelling</h3>
+                        <p>Tell a compelling personal story</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('interview')">
+                        <i class="fas fa-handshake"></i>
+                        <h3>Job Interview</h3>
+                        <p>Answer "Tell me about yourself"</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('debate')">
+                        <i class="fas fa-comments"></i>
+                        <h3>Debate Argument</h3>
+                        <p>Present a strong counterpoint</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips Tab -->
+        <div id="tipsTab" class="tab-content">
+            <div class="glass-card">
+                <div class="section-title">
+                    <div class="section-icon"><i class="fas fa-lightbulb"></i></div>
+                    <span>Common Speaking Tips</span>
+                </div>
+
+                <div class="tips-container">
+                    <div class="tip-card">
+                        <h3><i class="fas fa-stopwatch"></i> Strategic Pauses</h3>
+                        <p>Throw in a quick pause before your big points. A second or two of silence actually makes people pay attention - it builds tension and makes what you say next hit different. Most people talk way too fast anyway.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <h3><i class="fas fa-volume-up"></i> Volume Variation</h3>
+                        <p>Switch up how loud you talk. Go quieter when you're being real with them, louder when you're making your main point. Keeping the same volume the whole time is basically a lullaby.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <h3><i class="fas fa-ban"></i> Ditch the Filler Words</h3>
+                        <p>Every "um," "uh," and "like" makes you sound less confident. Just pause instead - silence actually sounds way better than filler. Record yourself and count them, then try to cut that number in half next time.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <h3><i class="fas fa-question"></i> Start with a Question</h3>
+                        <p>Opening with a question gets people thinking right away. "What would you do if..." or "Ever notice how..." beats "Today I'm gonna talk about..." every single time. Hook them from the jump.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <h3><i class="fas fa-ruler"></i> Rule of Three</h3>
+                        <p>People remember stuff in threes. Three points, three examples, three reasons why. It just works better - one feels incomplete, five is too much, three is that perfect balance.</p>
+                    </div>
+
+                    <div class="tip-card">
+                        <h3><i class="fas fa-heart"></i> End with Feeling</h3>
+                        <p>Don't just recap your points at the end. Tell them why it actually matters, how it changes things, what it means for them. People forget facts but they remember how you made them feel.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -3411,35 +3685,39 @@ def serve_frontend():
             const urlWithLang = streamUrl + '?language=' + encodeURIComponent(currentLanguage);
             feedbackEventSource = new EventSource(urlWithLang);
             
+            let scrollThrottle = null;
+
             feedbackEventSource.onmessage = function(event) {
                 try {
                     const data = JSON.parse(event.data);
-                    
+
                     if (data.error) {
                         console.error('Stream error:', data.error);
                         showStatus('❌ Analysis failed: ' + data.error, 'error');
                         feedbackEventSource.close();
                         return;
                     }
-                    
+
                     if (data.type === 'chunk' && data.content) {
                         // Hide loading and show text on first chunk
                         if (document.getElementById('feedbackLoading').style.display !== 'none') {
                             document.getElementById('feedbackLoading').style.display = 'none';
                             document.getElementById('feedbackText').style.display = 'block';
                         }
-                        
-                        // Append the new content with streaming animation
+
+                        // Efficiently append content without creating spans
                         const feedbackText = document.getElementById('feedbackText');
-                        const newSpan = document.createElement('span');
-                        newSpan.className = 'feedback-streaming';
-                        newSpan.textContent = data.content;
-                        feedbackText.appendChild(newSpan);
-                        
-                        // Scroll to bottom to follow the text
-                        feedbackText.scrollTop = feedbackText.scrollHeight;
+                        feedbackText.textContent += data.content;
+
+                        // Throttle scroll operations to improve performance
+                        if (!scrollThrottle) {
+                            scrollThrottle = setTimeout(() => {
+                                feedbackText.scrollTop = feedbackText.scrollHeight;
+                                scrollThrottle = null;
+                            }, 50);
+                        }
                     }
-                    
+
                     if (data.type === 'complete') {
                         console.log('✓ Analysis completed, chunks received:', data.total_chunks || 'unknown');
                         // Hide loading indicator
@@ -3447,9 +3725,18 @@ def serve_frontend():
                         feedbackEventSource.close();
                         feedbackEventSource = null;
 
-                        // Remove streaming classes
-                        const streamingElements = document.querySelectorAll('.feedback-streaming');
-                        streamingElements.forEach(el => el.classList.remove('feedback-streaming'));
+                        // Clear any pending scroll
+                        if (scrollThrottle) {
+                            clearTimeout(scrollThrottle);
+                            scrollThrottle = null;
+                        }
+
+                        // Final scroll to bottom
+                        const feedbackText = document.getElementById('feedbackText');
+                        feedbackText.scrollTop = feedbackText.scrollHeight;
+
+                        // Show copy button
+                        document.getElementById('copyFeedbackBtn').style.display = 'block';
                     }
                 } catch (error) {
                     console.error('Error parsing stream data:', error);
@@ -3569,6 +3856,107 @@ def serve_frontend():
         function formatDate(timestamp) {
             return new Date(timestamp * 1000).toLocaleString();
         }
+
+        // Tab Switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.closest('.nav-tab').classList.add('active');
+        }
+
+        // Practice Scenarios
+        const scenarios = {
+            elevator: {
+                topic: "30-Second Elevator Pitch",
+                type: "Professional Introduction"
+            },
+            persuasive: {
+                topic: "Convincing Argument on My Position",
+                type: "Persuasive Speech"
+            },
+            toast: {
+                topic: "Wedding Toast for the Couple",
+                type: "Special Occasion Speech"
+            },
+            intro: {
+                topic: "Introduction to Who I Am",
+                type: "Professional, Formal Introduction"
+            },
+            demo: {
+                topic: "Product or Idea Presentation",
+                type: "Demonstration Speech"
+            },
+            story: {
+                topic: "Personal Story with a Lesson",
+                type: "Storytelling"
+            },
+            interview: {
+                topic: "Tell Me About Yourself - Job Interview",
+                type: "Professional Interview Response"
+            },
+            debate: {
+                topic: "Counterargument on a Controversial Topic",
+                type: "Debate Speech"
+            }
+        };
+
+        function loadScenario(scenarioKey) {
+            const scenario = scenarios[scenarioKey];
+            if (!scenario) return;
+
+            // Switch to record tab
+            const recordTab = document.querySelectorAll('.nav-tab')[0];
+            recordTab.click();
+
+            // Small delay to ensure tab is switched
+            setTimeout(() => {
+                // Make sure recording setup is visible
+                document.getElementById('recordingSetup').classList.add('active');
+                document.getElementById('recordingsList').classList.remove('active');
+                document.getElementById('feedbackSection').classList.remove('active');
+                document.getElementById('recordingStatus').classList.remove('active');
+
+                // Fill in the form
+                document.getElementById('topicInput').value = scenario.topic;
+                document.getElementById('speechTypeInput').value = scenario.type;
+
+                // Show confirmation
+                showStatus('✓ Scenario loaded: ' + scenario.topic, 'success');
+
+                // Scroll to the form inputs
+                document.getElementById('topicInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 150);
+        }
+
+        // Copy Feedback
+        function copyFeedback() {
+            const feedbackText = document.getElementById('feedbackText').innerText;
+
+            navigator.clipboard.writeText(feedbackText).then(() => {
+                const btn = document.getElementById('copyFeedbackBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.style.background = 'rgba(34, 197, 94, 0.2)';
+                btn.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                    btn.style.borderColor = '';
+                }, 2000);
+            }).catch(err => {
+                showStatus('Failed to copy feedback', 'error');
+            });
+        }
+
     </script>
 </body>
 </html>
