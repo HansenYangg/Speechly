@@ -1,0 +1,66 @@
+[
+  {
+    "filename": "beans_20250523_213530.wav",
+    "transcription": "low low recording testing 1 2 3",
+    "score": null,
+    "topic": "beans",
+    "speech_type": "interview",
+    "recorded_at": "2025-05-23T21:35:31.456317"
+  },
+  {
+    "filename": "cheese_20250523_213717.wav",
+    "transcription": "hello hello my name is Hansen and I really like cheese I'm doing my presentation on cheese because I think cheese is very good and everyone should try cheese thank you for listening to my presentation",
+    "score": null,
+    "topic": "cheese",
+    "speech_type": "Presentation",
+    "recorded_at": "2025-05-23T21:37:20.576970"
+  },
+  {
+    "filename": "Cheese_20250523_214059.wav",
+    "transcription": "hello hello I'm talking about cheese I think she's very good because there are many types of cheese like provolone cheese Mozzarella cheese and gouda cheese and cheese is very versatile I think it's good for a lot of different foods like cheeseburgers and mozzarella sticks and overall everyone should buy an eat cheese unless you're lactose intolerant thanks for listening",
+    "score": null,
+    "topic": "Cheese",
+    "speech_type": "School presentation",
+    "recorded_at": "2025-05-23T21:41:06.954429"
+  },
+  {
+    "filename": "beans_20250523_215746.wav",
+    "transcription": "I like beads",
+    "score": null,
+    "topic": "beans",
+    "speech_type": "presentation",
+    "recorded_at": "2025-05-23T21:57:47.491126"
+  },
+  {
+    "filename": "beans_20250523_215822.wav",
+    "transcription": "the weather I like beans because I think they taste very good at everyone should try beans",
+    "score": null,
+    "topic": "beans",
+    "speech_type": "presentation, casual",
+    "recorded_at": "2025-05-23T21:58:23.896680"
+  },
+  {
+    "filename": "cheese_20250523_220239.wav",
+    "transcription": "hello I really like cheese I think everyone should eat cheese",
+    "score": null,
+    "topic": "cheese",
+    "speech_type": "interview",
+    "recorded_at": "2025-05-23T22:02:41.275879"
+  },
+  {
+    "filename": "trump_20250523_220320.wav",
+    "transcription": "like",
+    "score": null,
+    "topic": "trump",
+    "speech_type": "speech",
+    "recorded_at": "2025-05-23T22:03:20.863272"
+  },
+  {
+    "filename": "biden_20250523_220519.wav",
+    "transcription": "hello talking about bid",
+    "score": null,
+    "topic": "biden",
+    "speech_type": "chill interview",
+    "recorded_at": "2025-05-23T22:05:20.106021"
+  }
+]
