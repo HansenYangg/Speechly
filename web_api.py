@@ -1590,8 +1590,18 @@ def serve_frontend():
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--text-primary);
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             text-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
+        }
+
+        .recording-timer {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.6);
+            letter-spacing: 3px;
         }
 
         .status-subtext {
@@ -2224,6 +2234,120 @@ def serve_frontend():
         .copy-feedback-btn i {
             margin-right: 8px;
         }
+
+        /* Keyboard Shortcuts Button */
+        .shortcuts-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            border: 2px solid rgba(147, 51, 234, 0.5);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+        }
+
+        .shortcuts-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(147, 51, 234, 0.6);
+        }
+
+        /* Keyboard Shortcuts Modal */
+        .shortcuts-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .shortcuts-modal.active {
+            display: flex;
+        }
+
+        .shortcuts-content {
+            background: linear-gradient(135deg, rgba(25, 25, 50, 0.98), rgba(60, 45, 120, 0.98));
+            border: 2px solid rgba(147, 51, 234, 0.5);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .shortcuts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .shortcuts-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.8rem;
+        }
+
+        .shortcuts-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .shortcuts-close:hover {
+            color: var(--text-primary);
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            transition: background 0.2s ease;
+        }
+
+        .shortcut-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .shortcut-item kbd {
+            min-width: 50px;
+            padding: 8px 12px;
+            background: rgba(147, 51, 234, 0.3);
+            border: 2px solid rgba(147, 51, 234, 0.5);
+            border-radius: 8px;
+            color: var(--neon-cyan);
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .shortcut-item span {
+            color: var(--text-primary);
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -2364,6 +2488,7 @@ def serve_frontend():
                     <i class="fas fa-microphone"></i>
                 </div>
                 <div class="status-text">Recording Active</div>
+                <div class="recording-timer" id="recordingTimer">00:00</div>
                 <div class="status-subtext">Please speak clearly into your microphone.</div>
                 <div style="margin-top: 25px; display: flex; gap: 20px; justify-content: center;">
                     <button class="btn btn-stop" onclick="stopRecording()">
@@ -2534,6 +2659,49 @@ def serve_frontend():
         </div>
     </div>
 
+    <!-- Keyboard Shortcuts Help Button -->
+    <button class="shortcuts-btn" onclick="toggleShortcuts()" title="Keyboard Shortcuts (?)">
+        <i class="fas fa-keyboard"></i>
+    </button>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="shortcuts-modal" id="shortcutsModal">
+        <div class="shortcuts-content">
+            <div class="shortcuts-header">
+                <h2>⌨️ Keyboard Shortcuts</h2>
+                <button class="shortcuts-close" onclick="toggleShortcuts()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="shortcuts-grid">
+                <div class="shortcut-item">
+                    <kbd>R</kbd>
+                    <span>Start Recording</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Enter</kbd>
+                    <span>Stop Recording</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>X</kbd>
+                    <span>Cancel Recording</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>T</kbd>
+                    <span>Confirm & Start</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>B</kbd>
+                    <span>Go Back</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>?</kbd>
+                    <span>Show This Help</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let mediaRecorder;
         let audioChunks = [];
@@ -2543,6 +2711,8 @@ def serve_frontend():
         let recordings = [];
         let sessionId = null;
         let feedbackEventSource = null;
+        let recordingStartTime = null;
+        let recordingTimerInterval = null;
 
         // Use current host for API calls (works for both local and production)
         const API_BASE = window.location.origin + '/api';
@@ -3336,6 +3506,20 @@ def serve_frontend():
                             cancelRecording();
                         }
                         break;
+                    case '?':
+                        e.preventDefault();
+                        toggleShortcuts();
+                        break;
+                }
+            });
+
+            // Close modal on Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('shortcutsModal');
+                    if (modal.classList.contains('active')) {
+                        toggleShortcuts();
+                    }
                 }
             });
         }
@@ -3423,6 +3607,12 @@ def serve_frontend():
             recordedBlob = null;
             isRecording = false;
 
+            // Stop timer
+            if (recordingTimerInterval) {
+                clearInterval(recordingTimerInterval);
+                recordingTimerInterval = null;
+            }
+
             document.getElementById('recordingStatus').classList.remove('active');
             document.getElementById('recordBtn').classList.remove('recording');
             document.getElementById('stopBtn').classList.add('hidden');
@@ -3430,7 +3620,7 @@ def serve_frontend():
             document.getElementById('feedbackSection').classList.remove('active');
             document.getElementById('transcriptionSection').classList.add('hidden');
             document.getElementById('audioControls').classList.add('hidden');
-            
+
             showStatus('🚫 Recording cancelled - no analysis performed', 'info');
         }
 
@@ -3536,7 +3726,12 @@ def serve_frontend():
                 document.getElementById('recordingStatus').classList.add('active');
                 document.getElementById('recordBtn').classList.add('recording');
                 document.getElementById('stopBtn').classList.remove('hidden');
-                
+
+                // Start timer
+                recordingStartTime = Date.now();
+                document.getElementById('recordingTimer').textContent = '00:00';
+                recordingTimerInterval = setInterval(updateRecordingTimer, 100);
+
                 showStatus('🎤 Recording initiated! Speech patterns being captured...', 'info', 0);
 
             } catch (error) {
@@ -3559,11 +3754,26 @@ def serve_frontend():
             });
             isRecording = false;
 
+            // Stop timer
+            if (recordingTimerInterval) {
+                clearInterval(recordingTimerInterval);
+                recordingTimerInterval = null;
+            }
+
             document.getElementById('recordingStatus').classList.remove('active');
             document.getElementById('recordBtn').classList.remove('recording');
             document.getElementById('stopBtn').classList.add('hidden');
-            
+
             showStatus('⏹️ Recording completed. Initializing analysis...', 'info', 0);
+        }
+
+        function updateRecordingTimer() {
+            if (!recordingStartTime) return;
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            document.getElementById('recordingTimer').textContent = formatted;
         }
 
         function cancelRecording() {
@@ -3942,6 +4152,12 @@ def serve_frontend():
                 const offset = window.pageYOffset + rect.top - 120; // 120px from top instead of center
                 window.scrollTo({ top: offset, behavior: 'auto' });
             });
+        }
+
+        // Toggle Keyboard Shortcuts Modal
+        function toggleShortcuts() {
+            const modal = document.getElementById('shortcutsModal');
+            modal.classList.toggle('active');
         }
 
         // Copy Feedback
