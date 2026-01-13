@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pip:*)",
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "Bash(PORT=5001 python:*)",
+      "Bash(FORCE_PRODUCTION=true python:*)",
+      "Bash(cat:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(powershell \"Stop-Process -Id 32056 -Force; Stop-Process -Id 29248 -Force\")",
+      "Bash(powershell \"Get-Process python -ErrorAction SilentlyContinue | Where-Object {$_Path -like ''*Desktop*speechly*''} | Stop-Process -Force\")",
+      "Bash(powershell \"Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(python web_api.py:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git pull:*)",
+      "Bash(lsof:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill /PID 32732 /F)"
+    ]
+  }
+}
