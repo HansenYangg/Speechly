@@ -1060,7 +1060,7 @@ def serve_frontend():
             left: 0;
             right: 0;
             height: 70px;
-            background: rgba(10, 10, 15, 0.95);
+            background: rgba(10, 10, 15, 0.7);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(147, 51, 234, 0.3);
             display: flex;
@@ -3161,7 +3161,7 @@ def serve_frontend():
                     </div>
                     <div class="about-section">
                         <p>Speechly exists to help students master the art of communication through deliberate practice and AI-powered feedback. Whether you're preparing for a technical interview, perfecting a class presentation, or working on behavioral interview responses, our platform provides instant, actionable insights to help you improve.</p>
-                        <p>We've helped students land internships at FAANG+ companies (Google, Meta, Amazon, Apple, Microsoft, and top tech startups) by giving them a safe space to practice, fail, learn, and iterate on their communication skills.</p>
+                        <p>We've helped students land internships at FAANG+ companies by giving them a safe space to practice, fail, learn, and iterate on their communication skills.</p>
                         <p>The difference between a good answer and a great one often comes down to delivery. Speechly helps you bridge that gap.</p>
                     </div>
                 </div>
@@ -3194,22 +3194,6 @@ def serve_frontend():
                                 <p>Practice in 15+ languages including English, Spanish, Mandarin, Korean, and more. Perfect for international students or those preparing for global opportunities.</p>
                             </div>
                         </div>
-                    </div>
-                </div>
-    
-                <div class="glass-card">
-                    <div class="section-title">
-                        <div class="section-icon"><i class="fas fa-trophy"></i></div>
-                        <span>Success Stories</span>
-                    </div>
-                    <div class="about-section">
-                        <p><strong>Real results from real students:</strong></p>
-                        <ul class="success-list">
-                            <li><i class="fas fa-check-circle"></i> Students have landed internships at Google, Meta, Amazon, Apple, and Microsoft</li>
-                            <li><i class="fas fa-check-circle"></i> Average practice time before first offer: 8-12 hours of deliberate practice</li>
-                            <li><i class="fas fa-check-circle"></i> Most users report feeling significantly more confident in interviews after 5+ practice sessions</li>
-                            <li><i class="fas fa-check-circle"></i> Used by students at UC Berkeley, Stanford, MIT, CMU, and other top universities</li>
-                        </ul>
                     </div>
                 </div>
     
