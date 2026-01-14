@@ -604,76 +604,102 @@ def stream_feedback(session_id, filename):
                 
                 MIN_RECORDING_DURATION = 5
                 SHORT_RECORDING_THRESHOLD = 20
-                
-                if MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
+
+                # Check if it's behavioral interview mode (topic starts with behavioral marker)
+                is_behavioral = topic.startswith("BEHAVIORAL:")
+                if is_behavioral:
+                    behavioral_question = topic.replace("BEHAVIORAL:", "").strip()
+                    # Behavioral interview prompt
                     prompt = (
-                        f"You're reviewing a {speech_type} speech about '{topic}'. Here's what they said:\n\n"
+                        f"You're an experienced interview coach evaluating a candidate's answer to this behavioral question:\n\n"
+                        f"\"{behavioral_question}\"\n\n"
+                        f"Here's their response ({int(duration)} seconds):\n{transcription_text}\n\n"
+                        f"{repeat_context}\n"
+                        f"CRITICAL RULES:\n"
+                        f"- NO asterisks, NO bold, NO emojis, NO special formatting\n"
+                        f"- Write in plain text with clear section breaks (use === as dividers between major sections)\n"
+                        f"- Grade using STAR method: Situation (0-25), Task (0-25), Action (0-30), Result (0-20)\n"
+                        f"- OVERALL SCORE MUST EQUAL THE SUM OF THE FOUR STAR COMPONENTS. Calculate: Situation + Task + Action + Result = Overall\n"
+                        f"- Be TOUGH - most answers score 50-70/100. Excellent answers score 80-90. Perfect is rare.\n"
+                        f"- Look for: specific examples, quantifiable results, clear structure, relevant details\n"
+                        f"- Penalize: vague responses, no metrics, generic answers, poor structure\n\n"
+                        f"Format:\n\n"
+                        f"OVERALL SCORE: [X]/100 (MUST equal sum of Situation + Task + Action + Result below)\n\n"
+                        f"===STAR BREAKDOWN===\n"
+                        f"Situation (out of 25): [score] - Did they clearly set the context? Was it specific or vague?\n"
+                        f"Task (out of 25): [score] - Did they explain their role and what was at stake?\n"
+                        f"Action (out of 30): [score] - Were their actions concrete? Did they own their contribution?\n"
+                        f"Result (out of 20): [score] - Did they share measurable outcomes? What impact did they show?\n\n"
+                        f"===INITIAL REACTION===\n"
+                        f"[2-3 sentences on your immediate impression - Did this answer sell you on the candidate?]\n\n"
+                        f"===WHAT WORKED===\n"
+                        f"[Quote specific parts that were strong. Be genuine - if nothing stood out, say that.]\n\n"
+                        f"===WHAT MISSED===\n"
+                        f"[Be direct about gaps. Missing numbers? Say it. Too vague? Call it out. Didn't follow STAR? Explain why that hurt them.]\n\n"
+                        f"===HOW TO IMPROVE===\n"
+                        f"[Give them 2-3 concrete rewrites. Example: Instead of 'I helped the team', say 'I initiated daily standups that reduced bugs by 40%']\n\n"
+                        f"===INTERVIEW TIP===\n"
+                        f"[One strategic tip for crushing this type of question next time]\n\n"
+                        f"Write conversationally but professionally. Vary your language - no templates. This is practice for real high-stakes interviews.\n"
+                        f"{language_instruction}"
+                    )
+                elif MIN_RECORDING_DURATION < duration < SHORT_RECORDING_THRESHOLD:
+                    prompt = (
+                        f"You're a speaking coach giving feedback on a {int(duration)}-second {speech_type} about '{topic}'. Here's the transcription:\n\n"
                         f"{transcription_text}\n\n"
                         f"{repeat_context}\n"
-                        f"It's a quick one - about {int(duration)} seconds. Give them feedback like you're a experienced coach who's heard thousands of speeches.\n\n"
-                        f"Format your response like this:\n\n"
-                        f"**OVERALL: [X]/100**\n\n"
-                        f"**📊 BREAKDOWN**\n"
-                        f"Opening & Hook: [X]/20 - [quick comment]\n"
-                        f"Content & Clarity: [X]/20 - [quick comment]\n"
-                        f"Vocal Delivery: [X]/20 - [quick comment]\n"
-                        f"Structure & Flow: [X]/20 - [quick comment]\n"
-                        f"Closing Impact: [X]/20 - [quick comment]\n\n"
-                        f"**💪 What worked:**\n"
-                        f"[2-3 things, quote what they actually said when relevant]\n\n"
-                        f"**🎯 Room to grow:**\n"
-                        f"[2-3 things that need work, be specific about when/where it happened]\n\n"
-                        f"**🔧 Here's how to fix it:**\n"
-                        f"[Give them actual techniques they can try. Not \"be more confident\" but \"Try this: record yourself saying your opening line 5 times, each time a bit slower and louder than the last. Pick the one that feels most natural.\"]\n\n"
-                        f"**🚀 Try this next time:**\n"
-                        f"[One specific challenge for their next recording]\n\n"
-                        f"Keep it real - use precise scores (like 16.5/20, not just round numbers). Write like a human coach, not a textbook. Quote their actual words when you can. Make every suggestion something they can actually do, not vague advice.\n"
+                        f"Give them conversational feedback like you're their coach who just watched them speak. Skip the formalities and formatting tricks - just talk to them naturally.\n\n"
+                        f"CRITICAL RULES:\n"
+                        f"- NO asterisks, NO bold text, NO special markdown formatting\n"
+                        f"- Write in plain text with clear section breaks (use === as dividers between major sections)\n"
+                        f"- Grade HONESTLY and VARIABLY - if something deserves a 12/20, give it a 12. Don't default to 15-17 for everything\n"
+                        f"- Consider the context: a 30-second pitch should be graded differently than a 2-minute speech\n"
+                        f"- Be critical where needed - real scores range from 8/20 to 19/20, use the full spectrum\n\n"
+                        f"Format:\n\n"
+                        f"OVERALL SCORE: [X]/100\n\n"
+                        f"===BREAKDOWN===\n"
+                        f"Opening (out of 20): [score] - [why this score? what did they do or not do?]\n"
+                        f"Content (out of 20): [score] - [be specific]\n"
+                        f"Delivery (out of 20): [score] - [talk about pace, tone, energy]\n"
+                        f"Structure (out of 20): [score] - [did it flow or feel disjointed?]\n"
+                        f"Closing (out of 20): [score] - [did it land or fall flat?]\n\n"
+                        f"===FEEDBACK===\n"
+                        f"[2-3 paragraphs covering: what actually worked (quote them), what genuinely needs improvement (be honest), and 1-2 specific things to practice]\n\n"
+                        f"Write like you're texting feedback to a friend who wants real advice, not a formal evaluation report. Vary your language - don't use the same phrases for every speech. Be unpredictable but helpful.\n"
                         f"{language_instruction}"
                     )
                 else:
                     prompt = (
-                        f"You're a speech coach reviewing a {speech_type} about '{topic}'. Duration: about {int(duration)} seconds.\n\n"
-                        f"Here's what they said:\n{transcription_text}\n\n"
+                        f"You're a speech coach who just watched someone deliver a {int(duration)}-second {speech_type} about '{topic}'. Here's the transcription:\n\n"
+                        f"{transcription_text}\n\n"
                         f"{repeat_context}\n"
-                        f"Give them detailed feedback like you're sitting across from them after they just finished. Be real with them - they want to improve, not just hear they did great.\n\n"
-                        f"**{topic.upper()}** - {speech_type.title()}\n"
-                        f"*First impression:* [What's your gut reaction? 1-2 sentences]\n\n"
-                        f"**OVERALL: [X]/100**\n\n"
-                        f"**📊 THE BREAKDOWN**\n\n"
-                        f"**Opening & Hook: [X]/20**\n"
-                        f"[How'd they start? Did it hook you? Quote their first few lines and talk about whether it worked.]\n\n"
-                        f"**Content & Clarity: [X]/20**\n"
-                        f"[Did their points land? Were they clear? Give examples of where they nailed it or got muddy.]\n\n"
-                        f"**Vocal Delivery: [X]/20**\n"
-                        f"[Talk about their voice - pace, energy, tone. Call out specific moments. If they said \"um\" every other word or rushed through the middle, say when.]\n\n"
-                        f"**Structure & Flow: [X]/20**\n"
-                        f"[Did it flow naturally or feel choppy? How were the transitions? Walk through their structure.]\n\n"
-                        f"**Closing: [X]/20**\n"
-                        f"[How'd they wrap it up? Did it stick with you? Quote their ending.]\n\n"
-                        f"**💪 What killed:**\n"
-                        f"[3-4 things they genuinely did well. Quote them. Be specific - not \"good energy\" but \"when you said '[exact quote]', that landed really well because...\"\n\n"
-                        f"**🎯 What needs work:**\n\n"
-                        f"1. [First thing] - [Why it matters and where you noticed it]\n"
-                        f"2. [Second thing] - [Be specific with examples]\n"
-                        f"3. [Third thing] - [Don't hold back if it's important]\n\n"
-                        f"**🔧 Here's how to actually fix it:**\n\n"
-                        f"For each issue above, give them something they can practice TODAY:\n\n"
-                        f"**[Name the technique]**\n"
-                        f"[Real talk on how to do it. Example: \"Your pacing was all over the place. Here's what to do: Set a metronome to 140 BPM. Read your script out loud matching that rhythm for 5 minutes. It'll feel weird at first, but you'll find your sweet spot between too fast and putting people to sleep.\"]\n\n"
-                        f"**[Another technique]**\n"
-                        f"[Another concrete fix they can practice]\n\n"
-                        f"**[Third technique]**\n"
-                        f"[One more actionable thing]\n\n"
-                        f"**📈 The numbers:**\n"
-                        f"• Pace: roughly [X] words/min - [too fast/just right/kinda slow]\n"
-                        f"• Filler words: [how many and which ones - be honest]\n"
-                        f"• Sentence structure: [varied or monotonous?]\n"
-                        f"• Energy: [did it stay flat, build up, or drop off?]\n\n"
-                        f"**🚀 Next time you practice:**\n"
-                        f"[One specific thing to try. Make it measurable. Like: \"Record this again but start with a personal story, pause 3 full seconds before your main point, and cut 'um/uh' in half. Shoot for under {int(duration*0.9)} seconds.\"]\n\n"
-                        f"**💡 Level-up move:**\n"
-                        f"[One advanced tip specific to this type of speech that could really elevate it]\n\n"
-                        f"Remember: Use real scores (like 17/20, 16.5/20), quote their actual words, and make every tip something they can literally do in their next practice session. Write like you're texting them feedback, not writing a formal evaluation.\n"
+                        f"Give them honest, detailed feedback like you're sitting across from them having a real conversation.\n\n"
+                        f"CRITICAL RULES:\n"
+                        f"- NO asterisks, NO bold markdown, NO excessive emojis, NO special formatting\n"
+                        f"- Write in plain text with clear section breaks (use === as dividers between major sections)\n"
+                        f"- Grade with REAL VARIANCE - use the full 0-20 scale. Bad delivery = 9/20. Average = 13/20. Good = 16/20. Excellent = 18-19/20\n"
+                        f"- Don't cluster all scores around 15-17. If they rushed and had no structure, give them an 11. If opening was genuinely weak, score it 10/20\n"
+                        f"- Your overall score should be the actual sum of the five categories\n"
+                        f"- Be unpredictable - vary your phrasing, don't use template language, change up your feedback style\n"
+                        f"- Focus on REAL observations from their actual speech, not generic advice\n\n"
+                        f"Format:\n\n"
+                        f"First impression: [2-3 sentences of your immediate gut reaction. What stood out? What fell flat?]\n\n"
+                        f"OVERALL SCORE: [X]/100 (must equal sum of breakdown)\n\n"
+                        f"===BREAKDOWN===\n"
+                        f"Opening (out of 20): [score] - [Specific feedback on how they started. Quote their first line. Did it grab attention or bore you?]\n\n"
+                        f"Content (out of 20): [score] - [Were their ideas clear? Compelling? Shallow? Give examples of what worked or didn't.]\n\n"
+                        f"Delivery (out of 20): [score] - [Pace, tone, energy, filler words. Point to specific moments - 'you sped up here', 'monotone throughout', 'that pause before X was effective']\n\n"
+                        f"Structure (out of 20): [score] - [Did it have a logical flow or jump around? Were transitions smooth or abrupt?]\n\n"
+                        f"Closing (out of 20): [score] - [Quote how they ended. Did it leave an impact or just... stop?]\n\n"
+                        f"===WHAT WORKED===\n"
+                        f"[Point to 2-3 specific moments or techniques that were effective. Use their actual words.]\n\n"
+                        f"===NEEDS WORK===\n"
+                        f"[Be honest about 2-3 things that hurt the speech. Don't sugarcoat - if they were hard to follow, say it. If they had 20 filler words, call it out.]\n\n"
+                        f"===HOW TO FIX IT===\n"
+                        f"[Give them 2-3 concrete practices. Not vague 'be more confident' but actual techniques like 'record yourself listing 3 points without any filler words, repeat until you nail it twice in a row.']\n\n"
+                        f"===NEXT TIME===\n"
+                        f"[Something specific and measurable they should attempt in their next recording.]\n\n"
+                        f"Remember: Write like a real person, not an AI. Use different vocabulary each time. Be tough when needed. Grade accurately using the full scale. Make them feel like they're getting real coaching, not a template response.\n"
                         f"{language_instruction}"
                     )
                 
@@ -2147,6 +2173,13 @@ def serve_frontend():
             margin-top: 20px;
         }
 
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary-purple), transparent);
+            margin: 40px 0;
+            opacity: 0.3;
+        }
+
         .scenario-card {
             padding: 25px;
             background: rgba(255, 255, 255, 0.03);
@@ -2348,6 +2381,159 @@ def serve_frontend():
             color: var(--text-primary);
             font-size: 16px;
         }
+
+        /* Behavioral Interview Mode Toggle */
+        .behavioral-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            display: inline-block;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            transition: 0.3s;
+            border-radius: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 2px;
+            bottom: 2px;
+            background: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background: var(--primary-gradient);
+            border-color: var(--neon-purple);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .toggle-label i {
+            color: var(--primary-purple);
+            font-size: 20px;
+        }
+
+        /* Behavioral Mode Indicator */
+        .behavioral-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(124, 58, 237, 0.2));
+            border: 2px solid var(--neon-purple);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .behavioral-indicator i {
+            color: var(--neon-cyan);
+            font-size: 24px;
+        }
+
+        .behavioral-indicator span {
+            color: var(--neon-cyan);
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1.5px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(147, 51, 234, 0.6);
+            }
+        }
+
+        /* Mode Description */
+        .mode-description {
+            margin-top: -10px;
+            margin-bottom: 20px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--primary-purple);
+            border-radius: 8px;
+        }
+
+        .mode-description p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Behavioral Field Styling */
+        .behavioral-field {
+            margin-bottom: 25px;
+        }
+
+        .behavioral-field textarea {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(25, 25, 50, 0.9), rgba(60, 45, 120, 0.4));
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .behavioral-field textarea:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            background: linear-gradient(135deg, rgba(25, 25, 50, 1), rgba(60, 45, 120, 0.5));
+            box-shadow:
+                inset 0 2px 10px rgba(0, 0, 0, 0.3),
+                0 0 0 4px rgba(0, 245, 255, 0.2),
+                0 0 20px rgba(0, 245, 255, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -2454,8 +2640,32 @@ def serve_frontend():
                     </div>
                     <span>Configuration</span>
                 </div>
-                
-                <div class="form-grid">
+
+                <!-- Behavioral Interview Mode Toggle -->
+                <div class="behavioral-mode-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="behavioralModeToggle" onchange="toggleBehavioralMode()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div class="toggle-label">
+                        <i class="fas fa-briefcase"></i>
+                        <span>Behavioral Interview Mode</span>
+                    </div>
+                </div>
+
+                <!-- Mode Description -->
+                <div class="mode-description" id="modeDescription">
+                    <p>General speaking practice mode - Focus on articulating ideas smoothly and improving overall communication skills</p>
+                </div>
+
+                <!-- Behavioral Mode Indicator -->
+                <div class="behavioral-indicator" id="behavioralIndicator" style="display: none;">
+                    <i class="fas fa-user-tie"></i>
+                    <span>BEHAVIORAL INTERVIEW MODE ACTIVE</span>
+                </div>
+
+                <!-- Standard Mode Fields -->
+                <div class="form-grid" id="standardFields">
                     <div class="input-group">
                         <label for="topicInput">Speech Topic</label>
                         <input type="text" id="topicInput" placeholder="What will you be speaking about?" maxlength="200">
@@ -2465,7 +2675,15 @@ def serve_frontend():
                         <input type="text" id="speechTypeInput" placeholder="e.g., short presentation, pitch for a company, interview" maxlength="100">
                     </div>
                 </div>
-                
+
+                <!-- Behavioral Mode Field -->
+                <div class="behavioral-field" id="behavioralField" style="display: none;">
+                    <div class="input-group">
+                        <label for="behavioralQuestionInput">Behavioral Interview Question</label>
+                        <textarea id="behavioralQuestionInput" placeholder="e.g., Tell me about a time when you faced a challenge at work..." rows="3" maxlength="300"></textarea>
+                    </div>
+                </div>
+
                 <div class="checkbox-wrapper">
                     <input type="checkbox" id="repeatSpeech">
                     <label for="repeatSpeech" style="color: var(--text-primary); text-transform: none; letter-spacing: normal;">This is a repeat attempt on the same topic</label>
@@ -2611,6 +2829,57 @@ def serve_frontend():
                         <i class="fas fa-comments"></i>
                         <h3>Debate Argument</h3>
                         <p>Present a strong counterpoint</p>
+                    </div>
+                </div>
+
+                <!-- Behavioral Interview Questions Section -->
+                <div class="section-divider"></div>
+                <div class="section-title" style="margin-top: 40px;">
+                    <div class="section-icon"><i class="fas fa-user-tie"></i></div>
+                    <span>Common Behavioral Questions</span>
+                </div>
+                <p style="margin-bottom: 20px; opacity: 0.9;">Practice answering common behavioral interview questions using the STAR method (Situation, Task, Action, Result)</p>
+
+                <div class="scenarios-grid">
+                    <div class="scenario-card behavioral-question-card" onclick="loadBehavioralQuestion('challenge')">
+                        <i class="fas fa-mountain"></i>
+                        <h3>Overcoming Challenges</h3>
+                        <p>Tell me about a time you faced a significant challenge</p>
+                    </div>
+                    <div class="scenario-card behavioral-question-card" onclick="loadBehavioralQuestion('conflict')">
+                        <i class="fas fa-people-arrows"></i>
+                        <h3>Conflict Resolution</h3>
+                        <p>Describe a situation where you had to resolve a conflict</p>
+                    </div>
+                    <div class="scenario-card behavioral-question-card" onclick="loadBehavioralQuestion('leadership')">
+                        <i class="fas fa-users"></i>
+                        <h3>Leadership</h3>
+                        <p>Give an example of when you demonstrated leadership</p>
+                    </div>
+                    <div class="scenario-card behavioral-question-card" onclick="loadBehavioralQuestion('failure')">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Learning from Failure</h3>
+                        <p>Tell me about a time you failed and what you learned</p>
+                    </div>
+                    <div class="scenario-card behavioral-question-card" onclick="loadBehavioralQuestion('teamwork')">
+                        <i class="fas fa-handshake"></i>
+                        <h3>Teamwork</h3>
+                        <p>Describe your experience working in a difficult team</p>
+                    </div>
+                    <div class="scenario-card behavioral-question-card" onclick="loadBehavioralQuestion('initiative')">
+                        <i class="fas fa-rocket"></i>
+                        <h3>Taking Initiative</h3>
+                        <p>When did you go above and beyond your responsibilities?</p>
+                    </div>
+                    <div class="scenario-card behavioral-question-card" onclick="loadBehavioralQuestion('pressure')">
+                        <i class="fas fa-clock"></i>
+                        <h3>Working Under Pressure</h3>
+                        <p>Tell me about a time you worked under tight deadlines</p>
+                    </div>
+                    <div class="scenario-card behavioral-question-card" onclick="loadBehavioralQuestion('impact')">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Making an Impact</h3>
+                        <p>Describe a project where you made a significant impact</p>
                     </div>
                 </div>
             </div>
@@ -3665,12 +3934,24 @@ def serve_frontend():
         }
 
         async function confirmRecording() {
-            const topic = document.getElementById('topicInput').value.trim();
-            const speechType = document.getElementById('speechTypeInput').value.trim();
-            
-            if (!topic || !speechType) {
-                showStatus('Please configure both topic and speech type for analysis', 'error');
-                return;
+            const isBehavioralMode = document.getElementById('behavioralModeToggle').checked;
+            let topic, speechType;
+
+            if (isBehavioralMode) {
+                const behavioralQuestion = document.getElementById('behavioralQuestionInput').value.trim();
+                if (!behavioralQuestion) {
+                    showStatus('Please enter a behavioral interview question', 'error');
+                    return;
+                }
+                topic = "BEHAVIORAL:" + behavioralQuestion;
+                speechType = "Behavioral Interview Response";
+            } else {
+                topic = document.getElementById('topicInput').value.trim();
+                speechType = document.getElementById('speechTypeInput').value.trim();
+                if (!topic || !speechType) {
+                    showStatus('Please configure both topic and speech type for analysis', 'error');
+                    return;
+                }
             }
 
             if (!sessionId) {
@@ -3814,8 +4095,18 @@ def serve_frontend():
                     reader.readAsDataURL(wavBlob);
                 });
 
-                const topic = document.getElementById('topicInput').value.trim();
-                const speechType = document.getElementById('speechTypeInput').value.trim();
+                const isBehavioralMode = document.getElementById('behavioralModeToggle').checked;
+                let topic, speechType;
+
+                if (isBehavioralMode) {
+                    const behavioralQuestion = document.getElementById('behavioralQuestionInput').value.trim();
+                    topic = "BEHAVIORAL:" + behavioralQuestion;
+                    speechType = "Behavioral Interview Response";
+                } else {
+                    topic = document.getElementById('topicInput').value.trim();
+                    speechType = document.getElementById('speechTypeInput').value.trim();
+                }
+
                 const isRepeat = document.getElementById('repeatSpeech').checked;
 
                 let audioData = audioBase64;
@@ -4080,6 +4371,81 @@ def serve_frontend():
             // Show selected tab
             document.getElementById(tabName + 'Tab').classList.add('active');
             event.target.closest('.nav-tab').classList.add('active');
+        }
+
+        // Behavioral Interview Mode Toggle
+        function toggleBehavioralMode() {
+            const isEnabled = document.getElementById('behavioralModeToggle').checked;
+            const indicator = document.getElementById('behavioralIndicator');
+            const standardFields = document.getElementById('standardFields');
+            const behavioralField = document.getElementById('behavioralField');
+            const modeDescription = document.getElementById('modeDescription');
+            const repeatCheckbox = document.querySelector('.checkbox-wrapper');
+
+            if (isEnabled) {
+                indicator.style.display = 'flex';
+                standardFields.style.display = 'none';
+                behavioralField.style.display = 'block';
+                repeatCheckbox.style.display = 'none';
+                modeDescription.innerHTML = '<p>Behavioral interview prep mode - Practice answering behavioral questions using the STAR method (Situation, Task, Action, Result) for structured, compelling responses</p>';
+            } else {
+                indicator.style.display = 'none';
+                standardFields.style.display = 'grid';
+                behavioralField.style.display = 'none';
+                repeatCheckbox.style.display = 'block';
+                modeDescription.innerHTML = '<p>General speaking practice mode - Focus on articulating ideas smoothly and improving overall communication skills</p>';
+            }
+        }
+
+        // Behavioral Questions
+        const behavioralQuestions = {
+            challenge: "Tell me about a time when you faced a significant challenge at work or school. How did you handle it?",
+            conflict: "Describe a situation where you had to resolve a conflict with a coworker or team member. What was the outcome?",
+            leadership: "Give me an example of when you demonstrated leadership, even if you weren't in a formal leadership role.",
+            failure: "Tell me about a time you failed at something. What did you learn from that experience?",
+            teamwork: "Describe your experience working in a difficult team dynamic. How did you navigate it?",
+            initiative: "Tell me about a time when you went above and beyond your job responsibilities. What motivated you?",
+            pressure: "Describe a situation where you had to work under tight deadlines or intense pressure. How did you manage?",
+            impact: "Tell me about a project or initiative where you made a significant impact. What was your role?"
+        };
+
+        function loadBehavioralQuestion(questionKey) {
+            const question = behavioralQuestions[questionKey];
+            if (!question) return;
+
+            // Switch to record tab
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById('recordTab').classList.add('active');
+            document.querySelectorAll('.nav-tab')[0].classList.add('active');
+
+            // Enable behavioral mode
+            document.getElementById('behavioralModeToggle').checked = true;
+            toggleBehavioralMode();
+
+            // Make sure recording setup is visible
+            document.getElementById('recordingSetup').classList.add('active');
+            document.getElementById('recordingsList').classList.remove('active');
+            document.getElementById('feedbackSection').classList.remove('active');
+            document.getElementById('recordingStatus').classList.remove('active');
+
+            // Fill in the question
+            document.getElementById('behavioralQuestionInput').value = question;
+
+            // Show confirmation
+            showStatus('✓ Behavioral question loaded: ' + questionKey, 'success');
+
+            // Scroll to show form
+            requestAnimationFrame(() => {
+                const behavioralField = document.getElementById('behavioralField');
+                const rect = behavioralField.getBoundingClientRect();
+                const offset = window.pageYOffset + rect.top - 120;
+                window.scrollTo({ top: offset, behavior: 'auto' });
+            });
         }
 
         // Practice Scenarios
