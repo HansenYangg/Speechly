@@ -2246,6 +2246,117 @@ def serve_frontend():
             color: var(--text-secondary);
         }
 
+        /* About Tab Styles */
+        .about-section {
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .about-section p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .about-section p:last-child {
+            margin-bottom: 0;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .feature-item {
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(147, 51, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            color: var(--primary-purple);
+            margin-bottom: 15px;
+        }
+
+        .feature-item h3 {
+            margin: 0 0 12px;
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+
+        .feature-item p {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .success-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0 0;
+        }
+
+        .success-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .success-list li:last-child {
+            border-bottom: none;
+        }
+
+        .success-list li i {
+            color: #00E676;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .audience-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .audience-card {
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(124, 58, 237, 0.05));
+            border-radius: 10px;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+        }
+
+        .audience-card h4 {
+            margin: 0 0 10px;
+            font-size: 17px;
+            color: var(--text-primary);
+        }
+
+        .audience-card h4 i {
+            margin-right: 8px;
+            color: var(--primary-purple);
+        }
+
+        .audience-card p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
         /* Copy Feedback Button */
         .copy-feedback-btn {
             margin-top: 15px;
@@ -2568,6 +2679,9 @@ def serve_frontend():
             </button>
             <button class="nav-tab" onclick="switchTab('tips')">
                 <i class="fas fa-lightbulb"></i> Common Tips
+            </button>
+            <button class="nav-tab" onclick="switchTab('about')">
+                <i class="fas fa-info-circle"></i> About
             </button>
         </div>
 
@@ -2922,6 +3036,95 @@ def serve_frontend():
                     <div class="tip-card">
                         <h3><i class="fas fa-heart"></i> End with Feeling</h3>
                         <p>Don't just recap your points at the end. Tell them why it actually matters, how it changes things, what it means for them. People forget facts but they remember how you made them feel.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Tab Content -->
+        <div id="aboutTab" class="tab-content">
+            <div class="glass-card">
+                <div class="section-title">
+                    <div class="section-icon"><i class="fas fa-bullseye"></i></div>
+                    <span>Our Purpose</span>
+                </div>
+                <div class="about-section">
+                    <p>Speechly exists to help students master the art of communication through deliberate practice and AI-powered feedback. Whether you're preparing for a technical interview, perfecting a class presentation, or working on behavioral interview responses, our platform provides instant, actionable insights to help you improve.</p>
+                    <p>We've helped students land internships at FAANG+ companies (Google, Meta, Amazon, Apple, Microsoft, and top tech startups) by giving them a safe space to practice, fail, learn, and iterate on their communication skills.</p>
+                    <p>The difference between a good answer and a great one often comes down to delivery. Speechly helps you bridge that gap.</p>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="section-title">
+                    <div class="section-icon"><i class="fas fa-rocket"></i></div>
+                    <span>How It Works</span>
+                </div>
+                <div class="about-section">
+                    <div class="feature-grid">
+                        <div class="feature-item">
+                            <div class="feature-icon"><i class="fas fa-microphone-alt"></i></div>
+                            <h3>Record Your Speech</h3>
+                            <p>Practice with real behavioral questions, presentations, or pitch ideas. Record yourself answering just like you would in an actual interview or presentation setting.</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon"><i class="fas fa-brain"></i></div>
+                            <h3>Get AI Analysis</h3>
+                            <p>Our AI evaluates your delivery, structure, clarity, and content. For behavioral interviews, we grade using the STAR method (Situation, Task, Action, Result) to ensure your answers are comprehensive and compelling.</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                            <h3>Improve & Iterate</h3>
+                            <p>Review detailed feedback on what worked, what didn't, and specific ways to improve. Then practice again. Real improvement comes from repetition with feedback.</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon"><i class="fas fa-globe"></i></div>
+                            <h3>Multilingual Support</h3>
+                            <p>Practice in 15+ languages including English, Spanish, Mandarin, Korean, and more. Perfect for international students or those preparing for global opportunities.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="section-title">
+                    <div class="section-icon"><i class="fas fa-trophy"></i></div>
+                    <span>Success Stories</span>
+                </div>
+                <div class="about-section">
+                    <p><strong>Real results from real students:</strong></p>
+                    <ul class="success-list">
+                        <li><i class="fas fa-check-circle"></i> Students have landed internships at Google, Meta, Amazon, Apple, and Microsoft</li>
+                        <li><i class="fas fa-check-circle"></i> Average practice time before first offer: 8-12 hours of deliberate practice</li>
+                        <li><i class="fas fa-check-circle"></i> Most users report feeling significantly more confident in interviews after 5+ practice sessions</li>
+                        <li><i class="fas fa-check-circle"></i> Used by students at UC Berkeley, Stanford, MIT, CMU, and other top universities</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="section-title">
+                    <div class="section-icon"><i class="fas fa-users"></i></div>
+                    <span>Who Is This For?</span>
+                </div>
+                <div class="about-section">
+                    <div class="audience-grid">
+                        <div class="audience-card">
+                            <h4><i class="fas fa-graduation-cap"></i> Students</h4>
+                            <p>Preparing for internship or full-time interviews, improving presentation skills for classes, or building confidence in public speaking.</p>
+                        </div>
+                        <div class="audience-card">
+                            <h4><i class="fas fa-briefcase"></i> Job Seekers</h4>
+                            <p>Practicing behavioral interview responses, perfecting your elevator pitch, or rehearsing for technical presentations.</p>
+                        </div>
+                        <div class="audience-card">
+                            <h4><i class="fas fa-language"></i> Non-Native Speakers</h4>
+                            <p>Improving English fluency, reducing accents, and gaining confidence speaking in professional settings.</p>
+                        </div>
+                        <div class="audience-card">
+                            <h4><i class="fas fa-user-tie"></i> Professionals</h4>
+                            <p>Preparing for conference talks, investor pitches, team presentations, or leadership communication.</p>
+                        </div>
                     </div>
                 </div>
             </div>
