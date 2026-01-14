@@ -1008,7 +1008,7 @@ def serve_frontend():
             background: linear-gradient(135deg, rgba(157, 78, 221, 0.1), rgba(61, 90, 254, 0.05));
             border: 1px solid rgba(157, 78, 221, 0.2);
             border-radius: 50%;
-            animation: floatOptimized 25s infinite ease-in-out;
+            animation: floatOptimized 20s infinite ease-in-out;
             will-change: transform;
         }
 
@@ -1061,8 +1061,8 @@ def serve_frontend():
             right: 0;
             height: 70px;
             background: transparent;
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: none;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -1152,7 +1152,7 @@ def serve_frontend():
         .header {
             text-align: center;
             margin-bottom: 50px;
-            animation: slideInDown 1s ease-out;
+            animation: slideInDown 0.4s ease-out;
             position: relative;
         }
 
@@ -1487,7 +1487,7 @@ def serve_frontend():
             width: 100%;
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.6s;
+            transition: left 0.3s;
         }
 
         .btn:hover::before {
@@ -1503,7 +1503,7 @@ def serve_frontend():
             height: 0;
             background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
             transform: translate(-50%, -50%);
-            transition: all 0.6s;
+            transition: all 0.3s;
             border-radius: 50%;
         }
 
@@ -2256,7 +2256,7 @@ def serve_frontend():
         /* Practice Scenarios */
         .scenarios-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 16px;
             margin-top: 20px;
         }
@@ -2351,7 +2351,7 @@ def serve_frontend():
 
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 25px;
             margin-top: 20px;
         }
@@ -2733,6 +2733,46 @@ def serve_frontend():
                 0 0 0 4px rgba(0, 245, 255, 0.2),
                 0 0 20px rgba(0, 245, 255, 0.3);
         }
+/* Performance Optimizations */
+
+/* Add hardware acceleration to animated elements */
+.nav-tab,
+.top-nav-link,
+.btn,
+.glass-card,
+.scenario-card,
+.tip-card,
+.feature-item,
+.audience-card,
+.recording-card {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Optimize tab transitions */
+.tab-content {
+    will-change: opacity;
+    transform: translateZ(0);
+}
+
+/* Reduce animation complexity on hover */
+.scenario-card:hover,
+.feature-item:hover {
+    will-change: transform;
+}
+
+/* Optimize backdrop blur with containment */
+.top-nav,
+.glass-card {
+    contain: layout style paint;
+}
+
+/* Prevent layout thrashing */
+* {
+    box-sizing: border-box;
+}
     </style>
 </head>
 <body>
