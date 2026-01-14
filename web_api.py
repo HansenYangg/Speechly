@@ -1060,7 +1060,7 @@ def serve_frontend():
             left: 0;
             right: 0;
             height: 70px;
-            background: rgba(10, 10, 15, 0.4);
+            background: rgba(10, 10, 15, 0.15);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(147, 51, 234, 0.3);
             display: flex;
