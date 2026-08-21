@@ -1913,10 +1913,16 @@
     gap: 12px;
 }
 
-.recording-details .transcription-section,
-.recording-details .audio-controls,
-.recording-details .feedback-section {
+.recording-details .transcription-section {
     margin-top: 25px;
+}
+
+.recording-details .audio-controls {
+    margin-top: 40px;
+}
+
+.recording-details .feedback-section {
+    margin-top: 40px;
 }
 
 /* Make section titles darker/more visible in recording details */
