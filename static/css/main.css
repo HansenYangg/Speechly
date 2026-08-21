@@ -165,8 +165,7 @@
             left: 0;
             right: 0;
             height: 70px;
-            background: transparent;
-            backdrop-filter: blur(10px);
+            background: rgba(10, 10, 25, 0.7);
             border-bottom: none;
             display: flex;
             align-items: center;
@@ -1884,10 +1883,9 @@
 .recording-details {
     margin-top: 30px;
     padding: 30px;
-    background: linear-gradient(135deg, rgba(25, 25, 50, 0.95), rgba(60, 45, 120, 0.6));
+    background: linear-gradient(135deg, rgba(25, 25, 50, 0.98), rgba(60, 45, 120, 0.7));
     border: 1px solid var(--glass-border);
     border-radius: 20px;
-    backdrop-filter: blur(10px);
 }
 
 .recording-details.hidden {
