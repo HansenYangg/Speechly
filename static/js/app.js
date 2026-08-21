@@ -1199,8 +1199,6 @@ let mediaRecorder;
             // Add language parameter to stream URL
             const urlWithLang = streamUrl + '?language=' + encodeURIComponent(currentLanguage);
             feedbackEventSource = new EventSource(urlWithLang);
-            
-            let scrollThrottle = null;
 
             feedbackEventSource.onmessage = function(event) {
                 try {
@@ -1224,13 +1222,7 @@ let mediaRecorder;
                         const feedbackText = document.getElementById('feedbackText');
                         feedbackText.textContent += data.content;
 
-                        // Throttle scroll operations to improve performance
-                        if (!scrollThrottle) {
-                            scrollThrottle = setTimeout(() => {
-                                feedbackText.scrollTop = feedbackText.scrollHeight;
-                                scrollThrottle = null;
-                            }, 50);
-                        }
+                        // Don't auto-scroll during streaming - let user control scroll position
                     }
 
                     if (data.type === 'complete') {
@@ -1239,12 +1231,6 @@ let mediaRecorder;
                         document.getElementById('feedbackLoading').style.display = 'none';
                         feedbackEventSource.close();
                         feedbackEventSource = null;
-
-                        // Clear any pending scroll
-                        if (scrollThrottle) {
-                            clearTimeout(scrollThrottle);
-                            scrollThrottle = null;
-                        }
 
                         // Scroll to top when complete so user sees the beginning
                         const feedbackText = document.getElementById('feedbackText');
