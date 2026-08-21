@@ -1935,8 +1935,12 @@
     font-weight: 700;
 }
 
-/* Make Audio Playback text white */
-.recording-details .audio-controls .section-title,
+/* Make Audio Playback text white and center it */
+.recording-details .audio-controls .section-title {
+    color: #ffffff !important;
+    justify-content: center;
+}
+
 .recording-details .audio-controls .section-title span {
     color: #ffffff !important;
 }
