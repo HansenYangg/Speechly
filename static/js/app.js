@@ -1246,9 +1246,9 @@ let mediaRecorder;
                             scrollThrottle = null;
                         }
 
-                        // Final scroll to bottom
+                        // Scroll to top when complete so user sees the beginning
                         const feedbackText = document.getElementById('feedbackText');
-                        feedbackText.scrollTop = feedbackText.scrollHeight;
+                        feedbackText.scrollTop = 0;
 
                         // Show copy button
                         document.getElementById('copyFeedbackBtn').style.display = 'block';

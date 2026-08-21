@@ -66,8 +66,18 @@ class SessionRepository(BaseRepository):
         Returns:
             bool: True if deleted, False if not found
         """
+        import os
+
         session = self.get_by_id(session_id)
         if session:
+            # Delete all audio files for recordings in this session before deleting the session
+            for recording in session.recordings.all():
+                if recording.file_path and os.path.exists(recording.file_path):
+                    try:
+                        os.remove(recording.file_path)
+                    except Exception as e:
+                        print(f"Warning: Could not delete file {recording.file_path}: {e}")
+
             self.delete(session)
 
             # Dual-write to legacy dict if provided
@@ -87,6 +97,7 @@ class SessionRepository(BaseRepository):
         Returns:
             int: Number of sessions deleted
         """
+        import os
         from datetime import timedelta
 
         cutoff_time = datetime.utcnow() - timedelta(hours=max_age_hours)
@@ -96,6 +107,14 @@ class SessionRepository(BaseRepository):
 
         count = len(old_sessions)
         for session in old_sessions:
+            # Delete all audio files for recordings in this session
+            for recording in session.recordings.all():
+                if recording.file_path and os.path.exists(recording.file_path):
+                    try:
+                        os.remove(recording.file_path)
+                    except Exception as e:
+                        print(f"Warning: Could not delete file {recording.file_path}: {e}")
+
             self.delete(session)
 
         return count
