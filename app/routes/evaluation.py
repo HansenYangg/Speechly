@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify, Response, current_app
 import tempfile
 import os
 import base64
+import shutil
 from werkzeug.utils import secure_filename
 
 bp = Blueprint('evaluation', __name__, url_prefix='/api')
@@ -136,11 +137,12 @@ def record_and_evaluate():
             os.makedirs(recordings_dir, exist_ok=True)
             final_path = os.path.join(recordings_dir, filename)
 
-            # Remove existing file if it exists (Windows compatibility)
+            # Remove existing file if it exists
             if os.path.exists(final_path):
                 os.remove(final_path)
 
-            os.rename(temp_path, final_path)
+            # Use shutil.move instead of os.rename for cross-device compatibility
+            shutil.move(temp_path, final_path)
             file_path = final_path
             audio_data_base64 = None
 
