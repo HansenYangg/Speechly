@@ -1945,6 +1945,31 @@
     color: #ffffff !important;
 }
 
+/* Performance optimization - disable animations in active recording sections */
+#transcriptionSection .section-icon,
+#transcriptionSection .section-icon::before,
+#audioControls .section-icon,
+#audioControls .section-icon::before,
+#feedbackSection .section-icon,
+#feedbackSection .section-icon::before,
+.recording-details .section-icon,
+.recording-details .section-icon::before {
+    animation: none !important;
+}
+
+/* Reduce animation complexity when recording setup is active */
+#recordingSetup.active .section-icon::before {
+    animation: none !important;
+}
+
+/* Use GPU acceleration for smoother animations */
+.section-icon,
+.section-icon::before {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
 .recording-details .transcription-content,
 .recording-details .feedback-text {
     padding: 20px;
