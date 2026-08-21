@@ -1,4 +1,9 @@
 flask
 flask-cors
+flask-sqlalchemy
 openai
 python-dotenv
+alembic
+psycopg2-binary
+speech_recognition
+requests

@@ -22,7 +22,8 @@
       "Bash(git pull:*)",
       "Bash(lsof:*)",
       "Bash(findstr:*)",
-      "Bash(taskkill /PID 32732 /F)"
+      "Bash(taskkill /PID 32732 /F)",
+      "Bash(grep:*)"
     ]
   }
 }

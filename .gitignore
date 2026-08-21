@@ -1,4 +1,76 @@
-echo ".env" >> .gitignore
-git add .gitignore
-git commit -m "Add .env to gitignore"
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
 .env
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+dev.db
+
+# Logs
+logs/
+*.log
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Data files
+data/session_data.json
+data/speech_history.json
+data/backup/
+
+# Recordings
+recordings/*.wav
+!recordings/.gitkeep
+
+# Alembic
+alembic.ini.bak
+
+# OS specific
+Thumbs.db
+.DS_Store
+
+# Backup files
+*.bak
+*.backup
+*~
