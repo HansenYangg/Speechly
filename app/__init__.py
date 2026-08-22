@@ -172,13 +172,16 @@ def create_app(config_name=None):
     app.container = ServiceContainer(app)
 
     # Register blueprints
-    from app.routes import health, sessions, recordings, evaluation, frontend
+    from app.routes import health, sessions, recordings, evaluation, frontend, auth, scenarios, analytics
 
     app.register_blueprint(health.bp)
     app.register_blueprint(sessions.bp)
     app.register_blueprint(recordings.bp)
     app.register_blueprint(evaluation.bp)
     app.register_blueprint(frontend.bp)
+    app.register_blueprint(auth.bp)
+    app.register_blueprint(scenarios.bp)
+    app.register_blueprint(analytics.bp)
 
     return app
 

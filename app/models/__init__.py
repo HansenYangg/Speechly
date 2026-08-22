@@ -3,5 +3,6 @@ from .database import db, init_db
 from .session import Session
 from .recording import Recording
 from .speech_history import SpeechHistory
+from .custom_scenario import CustomScenario
 
-__all__ = ['db', 'init_db', 'Session', 'Recording', 'SpeechHistory']
+__all__ = ['db', 'init_db', 'Session', 'Recording', 'SpeechHistory', 'CustomScenario']
