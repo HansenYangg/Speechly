@@ -8,6 +8,12 @@ let mediaRecorder;
         let feedbackEventSource = null;
         let recordingStartTime = null;
         let recordingTimerInterval = null;
+        let wasAuthenticated = false;  // Track if user was authenticated on page load
+
+        // Auth token keys
+        const AUTH_TOKEN_KEY = 'speechly_access_token';
+        const REFRESH_TOKEN_KEY = 'speechly_refresh_token';
+        const USER_KEY = 'speechly_user';
 
         // Use current host for API calls (works for both local and production)
         const API_BASE = window.location.origin + '/api';
@@ -20,13 +26,152 @@ let mediaRecorder;
             });
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        // Get auth token for API calls
+        function getAuthToken() {
+            return localStorage.getItem(AUTH_TOKEN_KEY);
+        }
+
+        // Get auth headers for API calls
+        function getAuthHeaders() {
+            const token = getAuthToken();
+            if (token) {
+                return { 'Authorization': `Bearer ${token}` };
+            }
+            return {};
+        }
+
+        // Check if user is authenticated
+        async function checkAuthentication() {
+            const token = getAuthToken();
+
+            if (!token) {
+                window.location.href = '/login';
+                return false;
+            }
+
+            try {
+                const response = await fetch(API_BASE + '/auth/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.valid) {
+                    // Try to refresh token
+                    const refreshed = await refreshAuthToken();
+                    if (!refreshed) {
+                        window.location.href = '/login';
+                        return false;
+                    }
+                }
+
+                // Mark that user was authenticated on this page load
+                wasAuthenticated = true;
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        // Refresh auth token
+        async function refreshAuthToken() {
+            const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+
+            if (!refreshToken) {
+                return false;
+            }
+
+            try {
+                const response = await fetch(API_BASE + '/auth/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ refresh_token: refreshToken })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem(AUTH_TOKEN_KEY, data.session.access_token);
+                    localStorage.setItem(REFRESH_TOKEN_KEY, data.session.refresh_token);
+                    return true;
+                }
+            } catch (error) {
+                console.error('Token refresh failed:', error);
+            }
+
+            // Clear invalid tokens
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            localStorage.removeItem(REFRESH_TOKEN_KEY);
+            localStorage.removeItem(USER_KEY);
+            return false;
+        }
+
+        // Sign out user
+        async function signOut() {
+            const token = getAuthToken();
+
+            if (token) {
+                try {
+                    await fetch(API_BASE + '/auth/signout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                } catch (error) {
+                    console.error('Sign out error:', error);
+                }
+            }
+
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            localStorage.removeItem(REFRESH_TOKEN_KEY);
+            localStorage.removeItem(USER_KEY);
+            window.location.href = '/login';
+        }
+
+        // Get current user
+        function getCurrentUser() {
+            const userJson = localStorage.getItem(USER_KEY);
+            return userJson ? JSON.parse(userJson) : null;
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check authentication first
+            const isAuthenticated = await checkAuthentication();
+            if (!isAuthenticated) return;
+
             initializeSession();
             setupKeyboardShortcuts();
             loadLanguages();
             checkHealth();
             setupBeforeUnload();
+            setupUserMenu();
+            loadCustomScenarios();
         });
+
+        // Setup user menu in top nav
+        function setupUserMenu() {
+            const user = getCurrentUser();
+            if (user) {
+                const sessionInfo = document.getElementById('sessionInfo');
+                if (sessionInfo) {
+                    const userEmail = user.email.split('@')[0];
+                    sessionInfo.innerHTML = `
+                        <i class="fas fa-user-circle"></i>
+                        <span>${userEmail}</span>
+                        <button onclick="signOut()" style="margin-left: 15px; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 13px;">
+                            <i class="fas fa-sign-out-alt"></i> Sign Out
+                        </button>
+                    `;
+                }
+            }
+        }
 
         async function initializeSession() {
             try {
@@ -54,18 +199,26 @@ let mediaRecorder;
 
         function setupBeforeUnload() {
             window.addEventListener('beforeunload', function(e) {
-                if (sessionId) {
+                // Only cleanup session, never delete recordings for authenticated users
+                // Use wasAuthenticated flag which is set reliably on page load
+                if (sessionId && !wasAuthenticated) {
                     clearAllRecordings();
+                }
+                if (sessionId) {
                     cleanupSession();
                 }
                 if (feedbackEventSource) {
                     feedbackEventSource.close();
                 }
             });
-            
+
             window.addEventListener('unload', function(e) {
-                if (sessionId) {
+                // Only cleanup session, never delete recordings for authenticated users
+                // Use wasAuthenticated flag which is set reliably on page load
+                if (sessionId && !wasAuthenticated) {
                     clearAllRecordings();
+                }
+                if (sessionId) {
                     cleanupSession();
                 }
                 if (feedbackEventSource) {
@@ -672,9 +825,10 @@ let mediaRecorder;
             try {
                 const headers = {
                     'Content-Type': 'application/json',
+                    ...getAuthHeaders(),
                     ...options.headers
                 };
-                
+
                 if (sessionId) {
                     headers['Session-ID'] = sessionId;
                 }
@@ -969,6 +1123,13 @@ let mediaRecorder;
                 return;
             }
 
+            // Check if repeat mode is enabled but no recording selected
+            const isRepeatMode = document.getElementById('repeatSpeech').checked;
+            if (isRepeatMode && !selectedRepeatRecording) {
+                showStatus('Please select a previous recording to improve upon, or disable Improvement Mode', 'error');
+                return;
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
@@ -1117,7 +1278,7 @@ let mediaRecorder;
                     speechType = document.getElementById('speechTypeInput').value.trim();
                 }
 
-                const isRepeat = document.getElementById('repeatSpeech').checked;
+                const isRepeat = document.getElementById('repeatSpeech').checked && selectedRepeatRecording !== null;
 
                 let audioData = audioBase64;
                 if (audioData.includes(',')) {
@@ -1133,13 +1294,22 @@ let mediaRecorder;
                     is_repeat: isRepeat
                 };
 
+                // If this is a repeat attempt, include the previous recording data
+                if (isRepeat && selectedRepeatRecording) {
+                    payload.previous_recording_id = selectedRepeatRecording.id;
+                    payload.previous_transcription = selectedRepeatRecording.transcription;
+                    payload.previous_feedback = selectedRepeatRecording.feedback;
+                    payload.previous_score = extractScoreFromFeedback(selectedRepeatRecording.feedback);
+                }
+
                 showStatus('📤 Sending to AI for analysis...', 'info', 0);
 
                 const response = await fetch(API_BASE + '/record', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Session-ID': sessionId
+                        'Session-ID': sessionId,
+                        ...getAuthHeaders()
                     },
                     body: JSON.stringify(payload)
                 });
@@ -1489,6 +1659,11 @@ let mediaRecorder;
             // Show selected tab
             document.getElementById(tabName + 'Tab').classList.add('active');
             event.target.closest('.nav-tab').classList.add('active');
+
+            // Load analytics data when switching to analytics tab
+            if (tabName === 'analytics') {
+                loadAnalytics();
+            }
         }
 
         // Behavioral Interview Mode Toggle
@@ -1498,21 +1673,186 @@ let mediaRecorder;
             const standardFields = document.getElementById('standardFields');
             const behavioralField = document.getElementById('behavioralField');
             const modeDescription = document.getElementById('modeDescription');
-            const repeatCheckbox = document.querySelector('.checkbox-wrapper');
+            const repeatSection = document.getElementById('repeatModeSection');
 
             if (isEnabled) {
                 indicator.style.display = 'flex';
                 standardFields.style.display = 'none';
                 behavioralField.style.display = 'block';
-                repeatCheckbox.style.display = 'none';
+                repeatSection.style.display = 'none';
                 modeDescription.innerHTML = '<p>Behavioral interview prep mode - Practice answering behavioral questions using the STAR method (Situation, Task, Action, Result) for structured, compelling responses</p>';
+                // Clear repeat mode when switching to behavioral
+                document.getElementById('repeatSpeech').checked = false;
+                selectedRepeatRecording = null;
             } else {
                 indicator.style.display = 'none';
                 standardFields.style.display = 'grid';
                 behavioralField.style.display = 'none';
-                repeatCheckbox.style.display = 'block';
+                repeatSection.style.display = 'block';
                 modeDescription.innerHTML = '<p>General speaking practice mode - Focus on articulating ideas smoothly and improving overall communication skills</p>';
             }
+        }
+
+        // ============================================
+        // Repeat/Improvement Mode Functions
+        // ============================================
+
+        let selectedRepeatRecording = null;
+        let repeatRecordingsList = [];
+
+        // Toggle repeat mode panel
+        async function toggleRepeatMode() {
+            const isEnabled = document.getElementById('repeatSpeech').checked;
+            const panel = document.getElementById('repeatRecordingPanel');
+            const preview = document.getElementById('selectedRecordingPreview');
+            const listContainer = document.getElementById('repeatRecordingsList');
+
+            if (isEnabled) {
+                panel.style.display = 'block';
+                preview.style.display = 'none';
+                selectedRepeatRecording = null;
+
+                // Load recordings for selection
+                await loadRepeatRecordingOptions();
+            } else {
+                panel.style.display = 'none';
+                preview.style.display = 'none';
+                selectedRepeatRecording = null;
+            }
+        }
+
+        // Load recordings for repeat selection
+        async function loadRepeatRecordingOptions() {
+            const listContainer = document.getElementById('repeatRecordingsList');
+
+            listContainer.innerHTML = `
+                <div class="repeat-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Loading your recordings...</span>
+                </div>
+            `;
+
+            try {
+                const result = await apiCall('/recordings');
+
+                if (result.success && result.recordings && result.recordings.length > 0) {
+                    repeatRecordingsList = result.recordings;
+                    renderRepeatRecordingCards(result.recordings);
+                } else {
+                    listContainer.innerHTML = `
+                        <div class="repeat-no-recordings">
+                            <i class="fas fa-folder-open"></i>
+                            <span>No previous recordings found. Complete a recording first to use improvement mode.</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load recordings for repeat mode:', error);
+                listContainer.innerHTML = `
+                    <div class="repeat-no-recordings">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Failed to load recordings. Please try again.</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Render recording cards for selection
+        function renderRepeatRecordingCards(recordings) {
+            const listContainer = document.getElementById('repeatRecordingsList');
+
+            const cardsHtml = recordings.map((recording, index) => {
+                const title = recording.topic || 'Untitled Recording';
+                const truncatedTitle = title.length > 60 ? title.substring(0, 60) + '...' : title;
+                const score = extractScoreFromFeedback(recording.feedback);
+                const dateStr = formatDate(recording.created);
+
+                return `
+                    <div class="repeat-recording-card" onclick="selectRepeatRecording(${index})" data-index="${index}">
+                        <div class="repeat-card-title">${escapeHtml(truncatedTitle)}</div>
+                        <div class="repeat-card-meta">
+                            <div class="repeat-card-score">
+                                <i class="fas fa-star"></i>
+                                <span>${score}/100</span>
+                            </div>
+                            <div class="repeat-card-date">${dateStr}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            listContainer.innerHTML = cardsHtml;
+        }
+
+        // Extract score from feedback text
+        function extractScoreFromFeedback(feedback) {
+            if (!feedback) return '?';
+
+            // Try to find "Overall Score: X/100" pattern
+            const match = feedback.match(/Overall Score:\s*(\d+)\/100/i);
+            if (match) {
+                return match[1];
+            }
+
+            // Fallback: try to find any X/100 pattern
+            const fallbackMatch = feedback.match(/(\d+)\/100/);
+            if (fallbackMatch) {
+                return fallbackMatch[1];
+            }
+
+            return '?';
+        }
+
+        // Select a recording for repeat/improvement
+        function selectRepeatRecording(index) {
+            const recording = repeatRecordingsList[index];
+            if (!recording) return;
+
+            selectedRepeatRecording = recording;
+
+            // Update card selection visual
+            document.querySelectorAll('.repeat-recording-card').forEach((card, i) => {
+                card.classList.toggle('selected', i === index);
+            });
+
+            // Hide the list and show the preview
+            const listContainer = document.getElementById('repeatRecordingsList');
+            const preview = document.getElementById('selectedRecordingPreview');
+
+            listContainer.style.display = 'none';
+            preview.style.display = 'block';
+
+            // Populate preview
+            const title = recording.topic || 'Untitled Recording';
+            const truncatedTitle = title.length > 80 ? title.substring(0, 80) + '...' : title;
+            const score = extractScoreFromFeedback(recording.feedback);
+            const dateStr = formatDate(recording.created);
+
+            document.getElementById('previewTitle').textContent = truncatedTitle;
+            document.getElementById('previewScore').innerHTML = `<i class="fas fa-star"></i> Previous Score: ${score}/100`;
+            document.getElementById('previewDate').textContent = `Recorded: ${dateStr}`;
+
+            // Auto-fill the topic and speech type from the selected recording
+            document.getElementById('topicInput').value = recording.topic || '';
+            document.getElementById('speechTypeInput').value = recording.speech_type || '';
+
+            showStatus(`✓ Selected: "${truncatedTitle}" - Beat your score of ${score}/100!`, 'success');
+        }
+
+        // Clear repeat selection and go back to list
+        function clearRepeatSelection() {
+            selectedRepeatRecording = null;
+
+            const listContainer = document.getElementById('repeatRecordingsList');
+            const preview = document.getElementById('selectedRecordingPreview');
+
+            listContainer.style.display = 'grid';
+            preview.style.display = 'none';
+
+            // Clear selection visual
+            document.querySelectorAll('.repeat-recording-card').forEach(card => {
+                card.classList.remove('selected');
+            });
         }
 
         // Behavioral Questions
@@ -1663,4 +2003,712 @@ let mediaRecorder;
             }).catch(err => {
                 showStatus('Failed to copy feedback', 'error');
             });
+        }
+
+        // ============================================
+        // Custom Scenarios Functions
+        // ============================================
+
+        let customScenarios = { practice: [], behavioral: [] };
+
+        // Load custom scenarios on page load
+        async function loadCustomScenarios() {
+            const token = getAuthToken();
+            if (!token) return;
+
+            try {
+                const response = await fetch(API_BASE + '/scenarios', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    customScenarios.practice = data.scenarios.filter(s => s.scenario_type === 'practice');
+                    customScenarios.behavioral = data.scenarios.filter(s => s.scenario_type === 'behavioral');
+                    renderCustomScenarios();
+                }
+            } catch (error) {
+                console.error('Failed to load custom scenarios:', error);
+            }
+        }
+
+        // Render custom scenarios in the UI
+        function renderCustomScenarios() {
+            renderCustomScenarioGrid('practice', customScenarios.practice);
+            renderCustomScenarioGrid('behavioral', customScenarios.behavioral);
+        }
+
+        function renderCustomScenarioGrid(type, scenarios) {
+            const gridId = type === 'practice' ? 'customPracticeScenariosGrid' : 'customBehavioralScenariosGrid';
+            const noScenariosId = type === 'practice' ? 'noCustomPracticeScenarios' : 'noCustomBehavioralScenarios';
+            const grid = document.getElementById(gridId);
+            const noScenarios = document.getElementById(noScenariosId);
+
+            if (!grid || !noScenarios) return;
+
+            grid.innerHTML = '';
+
+            if (scenarios.length === 0) {
+                noScenarios.style.display = 'block';
+                grid.style.display = 'none';
+            } else {
+                noScenarios.style.display = 'none';
+                grid.style.display = 'grid';
+
+                scenarios.forEach(scenario => {
+                    const card = document.createElement('div');
+                    card.className = 'scenario-card custom-scenario-card' + (type === 'behavioral' ? ' behavioral-question-card' : '');
+
+                    // Truncate topic for display
+                    const truncatedText = scenario.topic.length > 80 ? scenario.topic.substring(0, 80) + '...' : scenario.topic;
+
+                    card.innerHTML = `
+                        <i class="fas ${type === 'behavioral' ? 'fa-user-tie' : 'fa-bookmark'}"></i>
+                        <h3>${escapeHtml(scenario.title)}</h3>
+                        <p>${escapeHtml(truncatedText)}</p>
+                        <button class="delete-scenario-btn" onclick="event.stopPropagation(); deleteCustomScenario(${scenario.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                    card.onclick = () => loadCustomScenario(scenario);
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load a custom scenario into the recording form
+        function loadCustomScenario(scenario) {
+            // Switch to Record tab
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById('recordTab').classList.add('active');
+            document.querySelectorAll('.nav-tab')[0].classList.add('active');
+
+            // Make sure recording setup is visible
+            document.getElementById('recordingSetup').classList.add('active');
+            document.getElementById('recordingsList').classList.remove('active');
+            document.getElementById('feedbackSection').classList.remove('active');
+            document.getElementById('recordingStatus').classList.remove('active');
+
+            if (scenario.scenario_type === 'behavioral') {
+                // Enable behavioral mode
+                document.getElementById('behavioralModeToggle').checked = true;
+                toggleBehavioralMode();
+
+                // Fill in the behavioral question
+                document.getElementById('behavioralQuestionInput').value = scenario.topic;
+            } else {
+                // Disable behavioral mode (ensure standard mode)
+                document.getElementById('behavioralModeToggle').checked = false;
+                toggleBehavioralMode();
+
+                // Fill in the standard form
+                document.getElementById('topicInput').value = scenario.topic;
+                document.getElementById('speechTypeInput').value = scenario.speech_type;
+            }
+
+            showStatus(`✓ Loaded: ${scenario.title}`, 'success');
+
+            // Scroll to show form
+            requestAnimationFrame(() => {
+                const setupSection = document.getElementById('recordingSetup');
+                const rect = setupSection.getBoundingClientRect();
+                const offset = window.pageYOffset + rect.top - 120;
+                window.scrollTo({ top: offset, behavior: 'auto' });
+            });
+        }
+
+        // Show the add scenario modal
+        function showAddScenarioModal(type) {
+            const modal = document.getElementById('customScenarioModal');
+            const title = document.getElementById('customScenarioModalTitle');
+            document.getElementById('customScenarioType').value = type;
+
+            if (type === 'behavioral') {
+                title.textContent = 'Add Custom Behavioral Question';
+                document.getElementById('customScenarioTopic').placeholder = 'e.g., Tell me about a time when you had to learn a new skill quickly';
+            } else {
+                title.textContent = 'Add Custom Practice Scenario';
+                document.getElementById('customScenarioTopic').placeholder = 'e.g., Explain a complex technical concept to a non-technical audience';
+            }
+
+            // Clear form
+            document.getElementById('customScenarioTitle').value = '';
+            document.getElementById('customScenarioTopic').value = '';
+
+            modal.classList.add('active');
+        }
+
+        // Hide the add scenario modal
+        function hideAddScenarioModal() {
+            document.getElementById('customScenarioModal').classList.remove('active');
+        }
+
+        // Submit custom scenario form
+        async function submitCustomScenario(event) {
+            event.preventDefault();
+
+            const token = getAuthToken();
+            if (!token) {
+                showStatus('Please sign in to save custom scenarios', 'error');
+                return;
+            }
+
+            const scenarioType = document.getElementById('customScenarioType').value;
+            const scenarioData = {
+                scenario_type: scenarioType,
+                title: document.getElementById('customScenarioTitle').value.trim(),
+                topic: document.getElementById('customScenarioTopic').value.trim(),
+                speech_type: scenarioType === 'behavioral' ? 'Behavioral Interview Response' : 'Custom Practice'
+            };
+
+            try {
+                const response = await fetch(API_BASE + '/scenarios', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(scenarioData)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    hideAddScenarioModal();
+                    showStatus('Custom scenario saved!', 'success');
+                    loadCustomScenarios(); // Reload the list
+                } else {
+                    showStatus(data.error || 'Failed to save scenario', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save custom scenario:', error);
+                showStatus('Failed to save scenario', 'error');
+            }
+        }
+
+        // Delete a custom scenario
+        async function deleteCustomScenario(scenarioId) {
+            if (!confirm('Delete this custom scenario?')) return;
+
+            const token = getAuthToken();
+            if (!token) return;
+
+            try {
+                const response = await fetch(API_BASE + '/scenarios/' + scenarioId, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showStatus('Scenario deleted', 'success');
+                    loadCustomScenarios(); // Reload the list
+                } else {
+                    showStatus(data.error || 'Failed to delete scenario', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to delete scenario:', error);
+                showStatus('Failed to delete scenario', 'error');
+            }
+        }
+
+        // ============================================
+        // Analytics Dashboard Functions
+        // ============================================
+
+        let scoreTrendChart = null;
+        let categoryRadarChart = null;
+        let modeDistributionChart = null;
+        let categoryProgressChart = null;
+        let analyticsDataCache = null;
+
+        // Chart.js default config for dark theme
+        const chartDefaults = {
+            color: '#B19CD9',
+            borderColor: 'rgba(147, 51, 234, 0.3)',
+            font: {
+                family: "'Inter', sans-serif"
+            }
+        };
+
+        // Load analytics when tab is shown
+        async function loadAnalytics() {
+            const token = getAuthToken();
+            if (!token) {
+                showAnalyticsState('no-data');
+                return;
+            }
+
+            showAnalyticsState('loading');
+
+            try {
+                // Get filter values
+                const period = document.getElementById('analyticsTimePeriod').value;
+                const mode = document.getElementById('analyticsModeFilter').value;
+                const language = document.getElementById('analyticsLanguageFilter').value;
+
+                const params = new URLSearchParams({ period, mode, language });
+
+                // Fetch all analytics data in parallel
+                const [overview, scores, trends, comparison, topRecordings, streaks] = await Promise.all([
+                    fetchAnalyticsData('/analytics/overview?' + params),
+                    fetchAnalyticsData('/analytics/scores?' + params),
+                    fetchAnalyticsData('/analytics/trends?' + params),
+                    fetchAnalyticsData('/analytics/comparison?' + params),
+                    fetchAnalyticsData('/analytics/top-recordings?' + params),
+                    fetchAnalyticsData('/analytics/streaks')
+                ]);
+
+                if (!overview.success || overview.total_recordings === 0) {
+                    showAnalyticsState('no-data');
+                    return;
+                }
+
+                // Cache the data
+                analyticsDataCache = { overview, scores, trends, comparison, topRecordings, streaks };
+
+                // Populate language filter options (only first time)
+                populateLanguageFilter(overview.languages_used || []);
+
+                // Update UI
+                updateOverviewStats(overview);
+                updateStreaks(streaks);
+                updateCategoryBars(comparison);
+                updateTopRecordings(topRecordings);
+                updateTrendIndicator(trends);
+
+                // Render charts
+                renderScoreTrendChart(trends);
+                renderCategoryRadarChart(comparison);
+                renderModeDistributionChart(overview);
+                renderCategoryProgressChart(scores);
+
+                showAnalyticsState('content');
+
+            } catch (error) {
+                console.error('Failed to load analytics:', error);
+                showAnalyticsState('no-data');
+            }
+        }
+
+        async function fetchAnalyticsData(endpoint) {
+            const token = getAuthToken();
+            const response = await fetch(API_BASE + endpoint, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await response.json();
+            // Unwrap the data from the response and add success flag
+            if (json.success && json.data) {
+                return { success: true, ...json.data };
+            }
+            return json;
+        }
+
+        function showAnalyticsState(state) {
+            document.getElementById('analyticsLoading').style.display = state === 'loading' ? 'flex' : 'none';
+            document.getElementById('analyticsNoData').style.display = state === 'no-data' ? 'flex' : 'none';
+            document.getElementById('analyticsContent').style.display = state === 'content' ? 'block' : 'none';
+        }
+
+        function populateLanguageFilter(languages) {
+            const select = document.getElementById('analyticsLanguageFilter');
+            const currentValue = select.value;
+
+            // Keep "All Languages" option
+            select.innerHTML = '<option value="all">All Languages</option>';
+
+            languages.forEach(lang => {
+                const option = document.createElement('option');
+                option.value = lang;
+                option.textContent = lang.toUpperCase();
+                select.appendChild(option);
+            });
+
+            // Restore selection if possible
+            if (currentValue && languages.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        function updateOverviewStats(overview) {
+            document.getElementById('statTotalRecordings').textContent = overview.total_recordings || 0;
+            document.getElementById('statAverageScore').textContent = overview.average_score ? Math.round(overview.average_score) : '--';
+            document.getElementById('statHighestScore').textContent = overview.highest_score || '--';
+            document.getElementById('statPracticeTime').textContent = Math.round((overview.total_duration || 0) / 60);
+        }
+
+        function updateStreaks(streaks) {
+            if (!streaks.success) return;
+            document.getElementById('currentStreak').textContent = streaks.current_streak || 0;
+            document.getElementById('longestStreak').textContent = streaks.longest_streak || 0;
+            document.getElementById('totalPracticeDays').textContent = streaks.total_practice_days || 0;
+        }
+
+        function updateTrendIndicator(trends) {
+            const indicator = document.getElementById('trendIndicator');
+            const icon = document.getElementById('trendIcon');
+            const text = document.getElementById('trendText');
+
+            if (!trends.data || trends.data.length < 2) {
+                indicator.style.display = 'none';
+                return;
+            }
+
+            // Calculate trend from recent vs older scores
+            const recentScores = trends.data.slice(-3).map(d => d.avg_score).filter(s => s);
+            const olderScores = trends.data.slice(0, -3).map(d => d.avg_score).filter(s => s);
+
+            if (recentScores.length === 0 || olderScores.length === 0) {
+                indicator.style.display = 'none';
+                return;
+            }
+
+            const recentAvg = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
+            const olderAvg = olderScores.reduce((a, b) => a + b, 0) / olderScores.length;
+            const change = recentAvg - olderAvg;
+
+            indicator.style.display = 'flex';
+
+            if (change > 3) {
+                indicator.className = 'trend-indicator trend-up';
+                icon.innerHTML = '<i class="fas fa-arrow-up"></i>';
+                text.textContent = `Up ${Math.round(change)} points from earlier`;
+            } else if (change < -3) {
+                indicator.className = 'trend-indicator trend-down';
+                icon.innerHTML = '<i class="fas fa-arrow-down"></i>';
+                text.textContent = `Down ${Math.abs(Math.round(change))} points from earlier`;
+            } else {
+                indicator.className = 'trend-indicator trend-stable';
+                icon.innerHTML = '<i class="fas fa-minus"></i>';
+                text.textContent = 'Scores holding steady';
+            }
+        }
+
+        function updateCategoryBars(comparison) {
+            if (!comparison.success) return;
+
+            const categories = [
+                { key: 'content', id: 'categoryContent', barId: 'categoryContentBar' },
+                { key: 'organization', id: 'categoryOrganization', barId: 'categoryOrganizationBar' },
+                { key: 'delivery', id: 'categoryDelivery', barId: 'categoryDeliveryBar' },
+                { key: 'language', id: 'categoryLanguage', barId: 'categoryLanguageBar' }
+            ];
+
+            categories.forEach(cat => {
+                const value = comparison[`avg_${cat.key}`];
+                const valueEl = document.getElementById(cat.id);
+                const barEl = document.getElementById(cat.barId);
+
+                if (value !== null && value !== undefined) {
+                    const rounded = Math.round(value * 10) / 10;
+                    valueEl.textContent = `${rounded}/25`;
+                    barEl.style.width = `${(value / 25) * 100}%`;
+                } else {
+                    valueEl.textContent = '--/25';
+                    barEl.style.width = '0%';
+                }
+            });
+        }
+
+        function updateTopRecordings(topRecordings) {
+            if (!topRecordings.success) return;
+
+            const topList = document.getElementById('topRecordingsList');
+            const recentList = document.getElementById('recentRecordingsList');
+
+            topList.innerHTML = renderRecordingsList(topRecordings.best || []);
+            recentList.innerHTML = renderRecordingsList(topRecordings.recent || []);
+        }
+
+        function renderRecordingsList(recordings) {
+            if (!recordings || recordings.length === 0) {
+                return '<div class="no-recordings-msg">No recordings yet</div>';
+            }
+
+            return recordings.map((rec, index) => `
+                <div class="recording-list-item">
+                    <span class="recording-rank">${index + 1}</span>
+                    <div class="recording-info">
+                        <div class="recording-topic">${escapeHtml(rec.topic?.substring(0, 40) || 'Untitled')}${rec.topic?.length > 40 ? '...' : ''}</div>
+                        <div class="recording-meta">${formatDate(rec.created_at)} · ${rec.recording_mode || 'standard'}</div>
+                    </div>
+                    <div class="recording-score ${getScoreClass(rec.score_overall)}">${rec.score_overall || '--'}</div>
+                </div>
+            `).join('');
+        }
+
+        function getScoreClass(score) {
+            if (!score) return '';
+            if (score >= 80) return 'score-excellent';
+            if (score >= 60) return 'score-good';
+            if (score >= 40) return 'score-average';
+            return 'score-needs-work';
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // Chart rendering functions
+        function renderScoreTrendChart(trends) {
+            const ctx = document.getElementById('scoreTrendChart').getContext('2d');
+
+            if (scoreTrendChart) {
+                scoreTrendChart.destroy();
+            }
+
+            if (!trends.data || trends.data.length === 0) {
+                return;
+            }
+
+            const labels = trends.data.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            const scores = trends.data.map(d => d.avg_score);
+
+            scoreTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Score',
+                        data: scores,
+                        borderColor: '#9D4EDD',
+                        backgroundColor: 'rgba(157, 78, 221, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#9D4EDD',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(20, 20, 40, 0.95)',
+                            titleColor: '#fff',
+                            bodyColor: '#B19CD9',
+                            borderColor: 'rgba(147, 51, 234, 0.5)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: 'rgba(147, 51, 234, 0.1)' },
+                            ticks: { color: '#B19CD9' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(147, 51, 234, 0.05)' },
+                            ticks: { color: '#B19CD9' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderCategoryRadarChart(comparison) {
+            const ctx = document.getElementById('categoryRadarChart').getContext('2d');
+
+            if (categoryRadarChart) {
+                categoryRadarChart.destroy();
+            }
+
+            const data = [
+                comparison.avg_content || 0,
+                comparison.avg_organization || 0,
+                comparison.avg_delivery || 0,
+                comparison.avg_language || 0
+            ];
+
+            categoryRadarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Content', 'Organization', 'Delivery', 'Language'],
+                    datasets: [{
+                        label: 'Category Scores',
+                        data: data,
+                        backgroundColor: 'rgba(157, 78, 221, 0.2)',
+                        borderColor: '#9D4EDD',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#9D4EDD',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 25,
+                            ticks: {
+                                stepSize: 5,
+                                color: '#B19CD9',
+                                backdropColor: 'transparent'
+                            },
+                            grid: { color: 'rgba(147, 51, 234, 0.2)' },
+                            pointLabels: { color: '#E8E3F3', font: { size: 12 } },
+                            angleLines: { color: 'rgba(147, 51, 234, 0.2)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderModeDistributionChart(overview) {
+            const ctx = document.getElementById('modeDistributionChart').getContext('2d');
+
+            if (modeDistributionChart) {
+                modeDistributionChart.destroy();
+            }
+
+            const modeData = overview.mode_distribution || {};
+            const labels = Object.keys(modeData).map(m => m.charAt(0).toUpperCase() + m.slice(1));
+            const data = Object.values(modeData);
+
+            if (data.length === 0) {
+                return;
+            }
+
+            modeDistributionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            'rgba(157, 78, 221, 0.8)',
+                            'rgba(0, 245, 255, 0.8)',
+                            'rgba(255, 16, 240, 0.8)'
+                        ],
+                        borderColor: 'rgba(20, 20, 40, 1)',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#B19CD9',
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        function renderCategoryProgressChart(scores) {
+            const ctx = document.getElementById('categoryProgressChart').getContext('2d');
+
+            if (categoryProgressChart) {
+                categoryProgressChart.destroy();
+            }
+
+            if (!scores.scores || scores.scores.length === 0) {
+                return;
+            }
+
+            // Sort by date and take last 10
+            const sortedScores = [...scores.scores]
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                .slice(-10);
+
+            const labels = sortedScores.map((s, i) => `#${i + 1}`);
+
+            categoryProgressChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Content',
+                            data: sortedScores.map(s => s.score_content || 0),
+                            backgroundColor: 'rgba(157, 78, 221, 0.8)',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Organization',
+                            data: sortedScores.map(s => s.score_organization || 0),
+                            backgroundColor: 'rgba(0, 245, 255, 0.8)',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Delivery',
+                            data: sortedScores.map(s => s.score_delivery || 0),
+                            backgroundColor: 'rgba(255, 16, 240, 0.8)',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Language',
+                            data: sortedScores.map(s => s.score_language || 0),
+                            backgroundColor: 'rgba(61, 90, 254, 0.8)',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: '#B19CD9', usePointStyle: true }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            stacked: true,
+                            max: 100,
+                            grid: { color: 'rgba(147, 51, 234, 0.1)' },
+                            ticks: { color: '#B19CD9' }
+                        },
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { color: '#B19CD9' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Called when filters change
+        async function updateAnalyticsCharts() {
+            await loadAnalytics();
         }

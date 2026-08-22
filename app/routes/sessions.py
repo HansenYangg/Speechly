@@ -69,7 +69,11 @@ def clear_session():
 
 @bp.route('/session/cleanup', methods=['POST'])
 def cleanup_user_session():
-    """Cleanup old sessions."""
+    """Cleanup old sessions - but preserve sessions with authenticated user recordings."""
+    import sys
+    import psycopg2
+    import os
+
     session_id = get_session_id(request)
 
     if not session_id:
@@ -77,6 +81,33 @@ def cleanup_user_session():
             'success': False,
             'error': 'No session ID provided'
         }), 400
+
+    # Check if this session has any recordings with a user_id (authenticated recordings)
+    # If so, DON'T delete the session to preserve the recordings
+    db_url = os.getenv('DATABASE_URL')
+    if db_url:
+        try:
+            conn = psycopg2.connect(db_url)
+            conn.set_session(autocommit=True)
+            cur = conn.cursor()
+
+            cur.execute("""
+                SELECT COUNT(*) FROM recordings
+                WHERE session_id = %s AND user_id IS NOT NULL
+            """, (session_id,))
+            user_recording_count = cur.fetchone()[0]
+
+            cur.close()
+            conn.close()
+
+            if user_recording_count > 0:
+                print(f"[CLEANUP] Skipping session {session_id[:8]} - has {user_recording_count} authenticated recordings", file=sys.stderr, flush=True)
+                return jsonify({
+                    'success': True,
+                    'message': 'Session preserved (has authenticated recordings)'
+                })
+        except Exception as e:
+            print(f"[CLEANUP ERROR] {str(e)}", file=sys.stderr, flush=True)
 
     session_repo = current_app.container.get_session_repository()
     session_repo.delete_session(session_id)
