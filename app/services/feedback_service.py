@@ -171,34 +171,34 @@ Empty/gibberish content:
 • Transcription of "...", "[inaudible]", silence, or pure nonsense = 8-15/100 max
 • Single word or phrase with no substance = 15-25/100 max
 
-Provide feedback in {language} using this EXACT format:
+Provide feedback in {language} using this EXACT format (DO NOT include brackets in your response - they are just placeholders showing what to write):
 
-[2-3 sentence executive summary - what you received and your honest assessment]
+2-3 sentence executive summary of what you received and your honest assessment.
 
 Content & Relevance (Score: X/25)
-[2-3 sentences: Did they address the topic? What was present/missing? Specific examples.]
+2-3 sentences: Did they address the topic? What was present/missing? Specific examples.
 
 Organization & Clarity (Score: X/25)
-[2-3 sentences: What structure existed? How was the flow? What could be reorganized?]
+2-3 sentences: What structure existed? How was the flow? What could be reorganized?
 
 Delivery & Confidence (Score: X/25)
-[2-3 sentences: How did they sound? Filler words? Hesitations? Energy level?]
+2-3 sentences: How did they sound? Filler words? Hesitations? Energy level?
 
 Language & Expression (Score: X/25)
-[2-3 sentences: Vocabulary range? Grammar? Any memorable phrases or issues?]
+2-3 sentences: Vocabulary range? Grammar? Any memorable phrases or issues?
 
 Overall Score: X/100
 
 Key Strengths:
-• [Specific strength 1]
-• [Specific strength 2]
+• Specific strength 1
+• Specific strength 2
 
 Priority Improvements:
-• [Most important thing to work on]
-• [Second priority]
+• Most important thing to work on
+• Second priority
 
 Bottom Line:
-[1-2 direct sentences with your honest professional assessment and encouragement for next steps]
+1-2 direct sentences with your honest professional assessment and encouragement for next steps.
 
 CRITICAL SCORING RULES - VIOLATIONS WILL BE FLAGGED:
 1. Each category score MUST be 0-25. NEVER exceed 25 for any category.
@@ -352,35 +352,35 @@ NEW ATTEMPT (Being Evaluated)
 
 ═══════════════════════════════════════════════════════════════
 
-Provide a detailed comparison and evaluation in {language}.
+Provide a detailed comparison and evaluation in {language} (DO NOT include brackets in your response - write actual feedback):
 
 IMPROVEMENT ANALYSIS
 
-[2-3 sentence overview: Did they improve, regress, or stay flat? What's the most notable difference? Be direct.]
+2-3 sentence overview: Did they improve, regress, or stay flat? What's the most notable difference? Be direct.
 
 What Improved:
-• [Specific improvement 1 with concrete example from the transcription]
-• [Specific improvement 2 - if nothing improved, say "No significant improvements observed"]
-• [Specific improvement 3 - optional]
+• Specific improvement 1 with concrete example from the transcription
+• Specific improvement 2 (if nothing improved, say "No significant improvements observed")
+• Specific improvement 3 (optional)
 
 What Still Needs Work:
-• [Area needing improvement 1 - be specific about what to fix]
-• [Area needing improvement 2]
-• [Any regressions from previous attempt]
+• Area needing improvement 1 - be specific about what to fix
+• Area needing improvement 2
+• Any regressions from previous attempt
 
 Side-by-Side Breakdown:
 
 Content & Relevance (Previous: X/25 → New: Y/25)
-[What changed in substance? More/less depth? Better/worse examples?]
+What changed in substance? More/less depth? Better/worse examples?
 
 Organization & Clarity (Previous: X/25 → New: Y/25)
-[Better/worse structure? Clearer/muddier flow?]
+Better/worse structure? Clearer/muddier flow?
 
 Delivery & Confidence (Previous: X/25 → New: Y/25)
-[More/less confident? Filler words improved/worsened?]
+More/less confident? Filler words improved/worsened?
 
 Language & Expression (Previous: X/25 → New: Y/25)
-[Vocabulary richer/poorer? Grammar better/worse?]
+Vocabulary richer/poorer? Grammar better/worse?
 
 ═══════════════════════════════════════════════════════════════
 SCORE COMPARISON: {prev_score_str}/100 → X/100 (change: ±Y)
@@ -388,16 +388,16 @@ SCORE COMPARISON: {prev_score_str}/100 → X/100 (change: ±Y)
 
 Overall Score: X/100
 
-[Progress indicator based on actual change]
+Progress indicator based on actual change.
 
 Key Strengths This Attempt:
-• [What they did well in THIS attempt]
+• What they did well in THIS attempt
 
 Priority for Next Attempt:
-• [Single most important thing to focus on next time]
+• Single most important thing to focus on next time
 
 Bottom Line:
-[1-2 direct sentences - honest assessment of progress and clear next step]
+1-2 direct sentences - honest assessment of progress and clear next step.
 
 SCORING RULES:
 • Score the NEW attempt on its own merits using the calibrated rubric
