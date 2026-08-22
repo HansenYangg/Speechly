@@ -234,6 +234,13 @@ def record_and_evaluate():
         import psycopg2
 
         db_url = os.getenv('DATABASE_URL')
+        if not db_url:
+            log(f"[SAVE] DATABASE_URL not in env, trying Flask config...")
+            db_url = current_app.config.get('SQLALCHEMY_DATABASE_URI')
+        if not db_url:
+            log(f"[SAVE] ERROR: No database URL found!")
+            return jsonify({'success': False, 'error': 'Database configuration missing'}), 500
+        log(f"[SAVE] Using db_url: {db_url[:50]}...")
 
         # Extract scores from feedback for analytics
         from app.models import Recording
