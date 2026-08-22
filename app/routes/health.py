@@ -1,5 +1,7 @@
 """Health check and configuration routes."""
 from flask import Blueprint, jsonify, current_app
+from app.models import Recording, Session, db
+import uuid
 
 bp = Blueprint('health', __name__, url_prefix='/api')
 
@@ -11,6 +13,37 @@ def health_check():
         'status': 'healthy',
         'service': 'Speechly API'
     })
+
+
+@bp.route('/test-db-save', methods=['GET'])
+def test_db_save():
+    """Test database save in HTTP context."""
+    try:
+        # Create session
+        session_id = f'http-test-{uuid.uuid4().hex[:8]}'
+        session = Session(id=session_id)
+        db.session.add(session)
+        db.session.commit()
+
+        # Create recording
+        recording = Recording(
+            session_id=session_id,
+            filename=f'{session_id}.webm',
+            topic='HTTP Test',
+            speech_type='practice',
+            language='en'
+        )
+        db.session.add(recording)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'recording_id': recording.id,
+            'message': 'Created and committed'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/languages', methods=['GET'])

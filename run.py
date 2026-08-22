@@ -28,6 +28,7 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=port,
-        debug=debug,
-        threaded=True
+        debug=False,  # Disable debug mode completely
+        threaded=False,
+        use_reloader=False
     )

@@ -1,5 +1,7 @@
 """Base repository pattern."""
+import sys
 from app.models import db
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class BaseRepository:
@@ -26,10 +28,17 @@ class BaseRepository:
 
     def create(self, **kwargs):
         """Create a new record."""
-        instance = self.model_class(**kwargs)
-        self.db.session.add(instance)
-        self.db.session.commit()
-        return instance
+        try:
+            instance = self.model_class(**kwargs)
+            self.db.session.add(instance)
+            self.db.session.flush()  # Flush to get the ID
+            self.db.session.commit()
+            print(f"[DB] Created {self.model_class.__name__} id={instance.id}", file=sys.stderr, flush=True)
+            return instance
+        except SQLAlchemyError as e:
+            self.db.session.rollback()
+            print(f"[DB ERROR] Failed to create {self.model_class.__name__}: {e}", file=sys.stderr, flush=True)
+            raise
 
     def update(self, instance):
         """Update an existing record."""

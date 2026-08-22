@@ -2,8 +2,19 @@
 import os
 import json
 import base64
+import psycopg2
 from app.models import Recording, db
 from .base import BaseRepository
+
+
+def _row_to_recording(row, columns):
+    """Convert a database row to a Recording object."""
+    data = dict(zip(columns, row))
+    recording = Recording()
+    for key, value in data.items():
+        if hasattr(recording, key):
+            setattr(recording, key, value)
+    return recording
 
 
 class RecordingRepository(BaseRepository):
@@ -23,10 +34,13 @@ class RecordingRepository(BaseRepository):
         self.config = config
         self.legacy_sessions = legacy_sessions_dict
         self.legacy_json_file = legacy_json_file
+        self._db_url = os.getenv('DATABASE_URL')
 
     def save_recording(self, session_id, filename, topic, speech_type, language,
-                       audio_file_path=None, audio_data_base64=None, transcription=None,
-                       feedback=None, duration=None, is_repeat=False, previous_recording_id=None):
+                       audio_file_path=None, audio_data_base64=None, audio_url=None,
+                       transcription=None, feedback=None, duration=None,
+                       is_repeat=False, previous_recording_id=None, user_id=None,
+                       recording_mode=None):
         """
         Save a recording to the database.
 
@@ -36,37 +50,37 @@ class RecordingRepository(BaseRepository):
             topic: Topic of the speech
             speech_type: Type of speech
             language: Language code
-            audio_file_path: Path to audio file (for file storage mode)
+            audio_file_path: Path to audio file (for file/supabase storage mode)
             audio_data_base64: Base64 encoded audio (for base64 storage mode)
+            audio_url: Public URL for Supabase Storage
             transcription: Transcription text
             feedback: Feedback text
             duration: Duration in seconds
             is_repeat: Whether this is a repeat attempt
             previous_recording_id: ID of previous recording (if repeat)
+            user_id: Supabase auth user ID for persistent storage
+            recording_mode: Mode of recording (standard, behavioral, improvement)
 
         Returns:
             Recording: Created recording instance
         """
-        # Determine storage mode from config
-        if self.config:
-            audio_storage = self.config.AUDIO_STORAGE
-        else:
-            audio_storage = 'file'  # Default
-
-        # Create recording
+        # Create recording with all storage options
         recording = self.create(
             session_id=session_id,
+            user_id=user_id,
             filename=filename,
             topic=topic,
             speech_type=speech_type,
             language=language,
-            audio_data=audio_data_base64 if audio_storage == 'base64' else None,
-            file_path=audio_file_path if audio_storage == 'file' else None,
+            audio_data=audio_data_base64,
+            file_path=audio_file_path,
+            audio_url=audio_url,
             transcription=transcription,
             feedback=feedback,
             duration=duration,
             is_repeat=is_repeat,
-            previous_recording_id=previous_recording_id
+            previous_recording_id=previous_recording_id,
+            recording_mode=recording_mode or 'standard'
         )
 
         # Dual-write to legacy in-memory dict if provided
@@ -90,12 +104,87 @@ class RecordingRepository(BaseRepository):
         return recording
 
     def get_by_filename(self, filename):
-        """Get a recording by filename."""
-        return self.db.session.query(Recording).filter_by(filename=filename).first()
+        """Get a recording by filename using raw SQL."""
+        import sys
+
+        if not self._db_url:
+            return self.db.session.query(Recording).filter_by(filename=filename).first()
+
+        try:
+            conn = psycopg2.connect(self._db_url)
+            conn.set_session(autocommit=True)
+            cur = conn.cursor()
+
+            cur.execute("""
+                SELECT id, session_id, user_id, filename, topic, speech_type, language,
+                       audio_data, file_path, audio_url, transcription, feedback, duration,
+                       is_repeat, previous_recording_id, recording_mode, created_at, updated_at
+                FROM recordings
+                WHERE filename = %s
+            """, (filename,))
+
+            columns = ['id', 'session_id', 'user_id', 'filename', 'topic', 'speech_type',
+                      'language', 'audio_data', 'file_path', 'audio_url', 'transcription',
+                      'feedback', 'duration', 'is_repeat', 'previous_recording_id',
+                      'recording_mode', 'created_at', 'updated_at']
+
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+
+            if row:
+                return _row_to_recording(row, columns)
+            return None
+
+        except Exception as e:
+            print(f"[FETCH ERROR] get_by_filename: {str(e)}", file=sys.stderr, flush=True)
+            return self.db.session.query(Recording).filter_by(filename=filename).first()
 
     def get_session_recordings(self, session_id):
         """Get all recordings for a session."""
         return self.db.session.query(Recording).filter_by(session_id=session_id).all()
+
+    def get_user_recordings(self, user_id):
+        """Get all recordings for a user (across all sessions) using raw SQL."""
+        import sys
+        print(f"[FETCH] Getting recordings for user_id={user_id}", file=sys.stderr, flush=True)
+
+        if not self._db_url:
+            print("[FETCH] No DATABASE_URL, falling back to SQLAlchemy", file=sys.stderr, flush=True)
+            return self.db.session.query(Recording).filter_by(user_id=user_id).order_by(Recording.created_at.desc()).all()
+
+        try:
+            conn = psycopg2.connect(self._db_url)
+            conn.set_session(autocommit=True)
+            cur = conn.cursor()
+
+            cur.execute("""
+                SELECT id, session_id, user_id, filename, topic, speech_type, language,
+                       audio_data, file_path, audio_url, transcription, feedback, duration,
+                       is_repeat, previous_recording_id, recording_mode, created_at, updated_at
+                FROM recordings
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+            """, (user_id,))
+
+            columns = ['id', 'session_id', 'user_id', 'filename', 'topic', 'speech_type',
+                      'language', 'audio_data', 'file_path', 'audio_url', 'transcription',
+                      'feedback', 'duration', 'is_repeat', 'previous_recording_id',
+                      'recording_mode', 'created_at', 'updated_at']
+
+            rows = cur.fetchall()
+            print(f"[FETCH] Found {len(rows)} recordings for user {user_id[:8] if user_id else 'None'}", file=sys.stderr, flush=True)
+
+            recordings = [_row_to_recording(row, columns) for row in rows]
+
+            cur.close()
+            conn.close()
+
+            return recordings
+
+        except Exception as e:
+            print(f"[FETCH ERROR] {str(e)}, falling back to SQLAlchemy", file=sys.stderr, flush=True)
+            return self.db.session.query(Recording).filter_by(user_id=user_id).order_by(Recording.created_at.desc()).all()
 
     def delete_recording(self, recording_id):
         """Delete a recording by ID."""

@@ -1,6 +1,7 @@
 """Recording management routes."""
 from flask import Blueprint, request, jsonify, send_file, current_app
 import os
+from app.services.auth_service import get_auth_service
 
 bp = Blueprint('recordings', __name__, url_prefix='/api')
 
@@ -10,19 +11,43 @@ def get_session_id(request_obj):
     return request_obj.headers.get('Session-ID')
 
 
+def get_user_id_from_token(request_obj):
+    """Extract user ID from Authorization header."""
+    auth_header = request_obj.headers.get('Authorization')
+    if not auth_header:
+        return None
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != 'bearer':
+        return None
+
+    access_token = parts[1]
+    auth_service = get_auth_service()
+    user = auth_service.get_user(access_token)
+
+    return user.get('id') if user else None
+
+
 @bp.route('/recordings', methods=['GET'])
 def get_recordings():
-    """Get all recordings for a session."""
-    session_id = get_session_id(request)
-
-    if not session_id:
-        return jsonify({
-            'success': False,
-            'error': 'No session ID provided'
-        }), 400
+    """Get all recordings for the authenticated user (across all sessions)."""
+    # Get user ID from auth token for persistent recordings
+    user_id = get_user_id_from_token(request)
 
     recording_repo = current_app.container.get_recording_repository()
-    recordings = recording_repo.get_session_recordings(session_id)
+
+    if user_id:
+        # Return all recordings for this user across all sessions
+        recordings = recording_repo.get_user_recordings(user_id)
+    else:
+        # Fallback to session-based lookup if not authenticated
+        session_id = get_session_id(request)
+        if not session_id:
+            return jsonify({
+                'success': False,
+                'error': 'No session ID or authentication provided'
+            }), 400
+        recordings = recording_repo.get_session_recordings(session_id)
 
     return jsonify({
         'success': True,
