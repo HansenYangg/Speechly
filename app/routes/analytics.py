@@ -48,13 +48,20 @@ def invalidate_user_cache(user_id):
 
 
 def get_db_connection():
-    """Get a raw psycopg2 database connection using SQLAlchemy's engine URL."""
-    # Get the URL from SQLAlchemy's engine - this is guaranteed to work since SQLAlchemy is connected
-    db_url = str(db.engine.url)
+    """Get a raw psycopg2 database connection."""
+    # Use the exact same approach as evaluation.py which works in production
+    db_url = os.getenv('DATABASE_URL')
 
-    # Handle SQLAlchemy's postgres:// vs psycopg2's postgresql://
-    if db_url.startswith('postgres://'):
-        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    if not db_url:
+        # Fallback: try Flask config
+        print(f"[ANALYTICS] DATABASE_URL not in env, trying Flask config...", file=sys.stderr, flush=True)
+        db_url = current_app.config.get('SQLALCHEMY_DATABASE_URI')
+
+    if not db_url:
+        print(f"[ANALYTICS] No database URL found!", file=sys.stderr, flush=True)
+        return None
+
+    print(f"[ANALYTICS] Connecting with URL: {db_url[:50]}...", file=sys.stderr, flush=True)
 
     conn = psycopg2.connect(db_url)
     conn.set_session(autocommit=True)
