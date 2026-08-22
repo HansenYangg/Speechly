@@ -118,7 +118,8 @@ class RecordingRepository(BaseRepository):
             cur.execute("""
                 SELECT id, session_id, user_id, filename, topic, speech_type, language,
                        audio_data, file_path, audio_url, transcription, feedback, duration,
-                       is_repeat, previous_recording_id, recording_mode, created_at, updated_at
+                       is_repeat, previous_recording_id, recording_mode, created_at, updated_at,
+                       score_overall, score_content, score_organization, score_delivery, score_language
                 FROM recordings
                 WHERE filename = %s
             """, (filename,))
@@ -126,7 +127,8 @@ class RecordingRepository(BaseRepository):
             columns = ['id', 'session_id', 'user_id', 'filename', 'topic', 'speech_type',
                       'language', 'audio_data', 'file_path', 'audio_url', 'transcription',
                       'feedback', 'duration', 'is_repeat', 'previous_recording_id',
-                      'recording_mode', 'created_at', 'updated_at']
+                      'recording_mode', 'created_at', 'updated_at',
+                      'score_overall', 'score_content', 'score_organization', 'score_delivery', 'score_language']
 
             row = cur.fetchone()
             cur.close()
@@ -161,7 +163,8 @@ class RecordingRepository(BaseRepository):
             cur.execute("""
                 SELECT id, session_id, user_id, filename, topic, speech_type, language,
                        audio_data, file_path, audio_url, transcription, feedback, duration,
-                       is_repeat, previous_recording_id, recording_mode, created_at, updated_at
+                       is_repeat, previous_recording_id, recording_mode, created_at, updated_at,
+                       score_overall, score_content, score_organization, score_delivery, score_language
                 FROM recordings
                 WHERE user_id = %s
                 ORDER BY created_at DESC
@@ -170,7 +173,8 @@ class RecordingRepository(BaseRepository):
             columns = ['id', 'session_id', 'user_id', 'filename', 'topic', 'speech_type',
                       'language', 'audio_data', 'file_path', 'audio_url', 'transcription',
                       'feedback', 'duration', 'is_repeat', 'previous_recording_id',
-                      'recording_mode', 'created_at', 'updated_at']
+                      'recording_mode', 'created_at', 'updated_at',
+                      'score_overall', 'score_content', 'score_organization', 'score_delivery', 'score_language']
 
             rows = cur.fetchall()
             print(f"[FETCH] Found {len(rows)} recordings for user {user_id[:8] if user_id else 'None'}", file=sys.stderr, flush=True)

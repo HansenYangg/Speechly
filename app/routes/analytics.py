@@ -114,6 +114,17 @@ def get_analytics_overview():
 
     try:
         cur = conn.cursor()
+
+        # First, check how many total recordings exist for this user
+        cur.execute("SELECT COUNT(*) FROM recordings WHERE user_id = %s", (user_id,))
+        total_count = cur.fetchone()[0]
+
+        # Check how many have scores
+        cur.execute("SELECT COUNT(*) FROM recordings WHERE user_id = %s AND score_overall IS NOT NULL", (user_id,))
+        scored_count = cur.fetchone()[0]
+
+        print(f"[ANALYTICS] user={user_id[:8]}... total_recordings={total_count}, with_scores={scored_count}", file=sys.stderr, flush=True)
+
         cur.execute("""
             SELECT id, score_overall, score_content, score_organization,
                    score_delivery, score_language, duration, recording_mode,
